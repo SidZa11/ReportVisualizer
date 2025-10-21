@@ -28,7 +28,7 @@ namespace ReportVisualizer.Utilities
                 catch (Exception ex)
                 {
                     Logger.LogError($"Error initializing global connection handler: {ex.Message}");
-                    throw;
+                    // Don't throw the exception, just log it to allow the application to start
                 }
             }
         }

@@ -1,0 +1,13 @@
+2025-10-21 12:54:38 [INFO] Configuration manager initialized
+2025-10-21 12:54:38 [INFO] Database services configured
+2025-10-21 12:56:23 [INFO] Configuration manager initialized
+2025-10-21 12:56:24 [WARNING] Connection string not found in configuration
+2025-10-21 12:56:24 [ERROR] Error initializing database connection: Connection string not found in configuration
+2025-10-21 12:56:24 [ERROR] Error initializing global connection handler: Connection string not found in configuration
+2025-10-21 12:57:46 [INFO] Configuration manager initialized
+2025-10-21 12:58:03 [ERROR] Error initializing database connection: A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: Named Pipes Provider, error: 40 - Could not open a connection to SQL Server)
+2025-10-21 12:58:03 [ERROR] Error initializing global connection handler: A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: Named Pipes Provider, error: 40 - Could not open a connection to SQL Server)
+2025-10-21 12:59:05 [INFO] Configuration manager initialized
+2025-10-21 12:59:22 [ERROR] Error initializing database connection: A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: Named Pipes Provider, error: 40 - Could not open a connection to SQL Server)
+2025-10-21 12:59:22 [INFO] Global connection handler initialized
+2025-10-21 12:59:22 [INFO] Database services configured

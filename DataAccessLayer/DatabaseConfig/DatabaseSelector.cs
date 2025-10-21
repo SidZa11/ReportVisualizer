@@ -4,6 +4,7 @@ using System.Data;
 using Microsoft.Data.SqlClient;
 using ReportVisualizer.Utilities;
 using ReportVisualizer.DataAccessLayer.Models;
+using ConfigManager = ReportVisualizer.Utilities.ConfigurationManager;
 
 namespace ReportVisualizer.DataAccessLayer.DatabaseConfig
 {
@@ -121,7 +122,7 @@ namespace ReportVisualizer.DataAccessLayer.DatabaseConfig
             try
             {
                 // Save configuration to application settings
-                ConfigurationManager.SaveDatabaseConfig(config);
+                ConfigManager.SaveDatabaseConfig(config);
                 Logger.Log($"Database configuration saved for database '{config.DatabaseName}'");
                 return true;
             }

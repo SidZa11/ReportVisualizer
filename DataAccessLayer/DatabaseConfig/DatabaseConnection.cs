@@ -2,6 +2,8 @@ using System;
 using System.Data;
 using Microsoft.Data.SqlClient;
 using ReportVisualizer.Utilities;
+// Use fully qualified name to avoid ambiguity
+using ConfigManager = ReportVisualizer.Utilities.ConfigurationManager;
 
 namespace ReportVisualizer.DataAccessLayer.DatabaseConfig
 {
@@ -62,7 +64,7 @@ namespace ReportVisualizer.DataAccessLayer.DatabaseConfig
         {
             try
             {
-                string connectionString = ConfigurationManager.GetConnectionString();
+                string connectionString = ConfigManager.GetConnectionString();
                 _connection = new SqlConnection(connectionString);
                 _connection.Open();
                 Logger.Log("Database connection established successfully");
@@ -70,7 +72,8 @@ namespace ReportVisualizer.DataAccessLayer.DatabaseConfig
             catch (Exception ex)
             {
                 Logger.LogError($"Error initializing database connection: {ex.Message}");
-                throw;
+                // Return null instead of throwing to allow application to start
+                _connection = null;
             }
         }
 

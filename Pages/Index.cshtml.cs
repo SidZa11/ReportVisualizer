@@ -16,7 +16,10 @@ namespace ReportVisualizer.Pages
             }
             catch (Exception ex)
             {
-                ErrorHandler.HandleException(ex, this);
+                // Log the exception instead of using ErrorHandler directly
+                Console.WriteLine($"Error on Index page: {ex.Message}");
+                // Add error message to TempData
+                TempData["ErrorMessage"] = "An error occurred while loading the page.";
             }
         }
     }

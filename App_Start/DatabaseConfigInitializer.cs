@@ -19,10 +19,10 @@ namespace ReportVisualizer.App_Start
         public static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
             // Initialize configuration manager
-            ConfigurationManager.Initialize(configuration);
+            ReportVisualizer.Utilities.ConfigurationManager.Initialize(configuration);
             
-            // Register database services
-            services.AddSingleton<GlobalConnectionHandler>();
+            // Initialize global connection handler directly
+            GlobalConnectionHandler.Initialize();
             
             Logger.Log("Database services configured");
         }
