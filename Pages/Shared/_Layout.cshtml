@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Report Visualizer</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">Report Visualizer</div>
+                <nav class="nav">
+                    <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/Index" ? "active" : "")" href="/">Home</a>
+                    <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/DatabaseConfig" ? "active" : "")" href="/DatabaseConfig">Database Config</a>
+                    <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/ReportTemplates" ? "active" : "")" href="/ReportTemplates">Templates</a>
+                    <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/ReportDevelopment" ? "active" : "")" href="/ReportDevelopment">Create Reports</a>
+                    <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/ReportViewer" ? "active" : "")" href="/ReportViewer">View Reports</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <div class="container">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success">
+                    @TempData["SuccessMessage"]
+                </div>
+            }
+            
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger">
+                    @TempData["ErrorMessage"]
+                </div>
+            }
+            
+            @RenderBody()
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; @DateTime.Now.Year - Report Visualizer</p>
+        </div>
+    </footer>
+
+    <script src="~/js/site.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,61 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                Welcome to Report Visualizer
+            </div>
+            <div class="card-body">
+                <h2>Comprehensive Report Management Solution</h2>
+                <p>Report Visualizer provides a complete solution for creating, managing, and viewing reports with a modern, responsive interface.</p>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6 col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header">Database Configuration</div>
+                            <div class="card-body">
+                                <p>Configure database connections and select data sources for your reports.</p>
+                                <a href="/DatabaseConfig" class="btn">Configure Database</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header">Report Templates</div>
+                            <div class="card-body">
+                                <p>Manage and create report templates to define the structure and appearance of your reports.</p>
+                                <a href="/ReportTemplates" class="btn">Manage Templates</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header">Create Reports</div>
+                            <div class="card-body">
+                                <p>Generate new reports by combining templates with data sources and parameters.</p>
+                                <a href="/ReportDevelopment" class="btn">Create Reports</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header">View Reports</div>
+                            <div class="card-body">
+                                <p>Browse, view, and export your generated reports in various formats.</p>
+                                <a href="/ReportViewer" class="btn">View Reports</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
