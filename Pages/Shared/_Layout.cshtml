@@ -26,6 +26,10 @@
 
     <div class="main-content">
         <div class="container">
+            <div id="globalLoader" class="loader-overlay">
+                <div class="loader-spinner"></div>
+            </div>
+
             @if (TempData["SuccessMessage"] != null)
             {
                 <div class="alert alert-success">
@@ -50,8 +54,33 @@
         </div>
     </footer>
 
+<<<<<<< HEAD
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+=======
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+>>>>>>> 1e7e9de4625225dfefefa42b407b4936273e0553
     <script src="~/js/site.js"></script>
+    <script>
+        // Show loader on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('globalLoader').style.display = 'none';
+        });
+
+        // Show loader on navigation (optional, depending on how navigation is handled)
+        // You might need more sophisticated logic for SPA or AJAX heavy applications
+        window.addEventListener('beforeunload', function() {
+            document.getElementById('globalLoader').style.display = 'flex';
+        });
+
+        // Example of how to show/hide loader manually:
+        // function showLoader() {
+        //     document.getElementById('globalLoader').style.display = 'flex';
+        // }
+
+        // function hideLoader() {
+        //     document.getElementById('globalLoader').style.display = 'none';
+        // }
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

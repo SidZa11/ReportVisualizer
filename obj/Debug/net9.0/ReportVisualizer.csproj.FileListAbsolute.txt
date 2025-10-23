@@ -462,7 +462,6 @@ D:\personal\ReportVisualizer\obj\Debug\net9.0\rjimswa.dswa.cache.json
 D:\personal\ReportVisualizer\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
 D:\personal\ReportVisualizer\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
 D:\personal\ReportVisualizer\obj\Debug\net9.0\scopedcss\bundle\ReportVisualizer.styles.css
-D:\personal\ReportVisualizer\obj\Debug\net9.0\compressed\5bw2hh89z1-j3nj5iyy7a.gz
 D:\personal\ReportVisualizer\obj\Debug\net9.0\staticwebassets.build.json
 D:\personal\ReportVisualizer\obj\Debug\net9.0\staticwebassets.build.json.cache
 D:\personal\ReportVisualizer\obj\Debug\net9.0\staticwebassets.development.json
@@ -947,6 +946,7 @@ C:\Users\Zakir\Project\ReportVisualizer\obj\Debug\net9.0\refint\ReportVisualizer
 C:\Users\Zakir\Project\ReportVisualizer\obj\Debug\net9.0\ReportVisualizer.pdb
 C:\Users\Zakir\Project\ReportVisualizer\obj\Debug\net9.0\ReportVisualizer.genruntimeconfig.cache
 C:\Users\Zakir\Project\ReportVisualizer\obj\Debug\net9.0\ref\ReportVisualizer.dll
+<<<<<<< HEAD
 C:\Users\Zakir\Project\ReportVisualizer\bin\Debug\net9.0\Microsoft.CodeAnalysis.VisualBasic.dll
 C:\Users\Zakir\Project\ReportVisualizer\bin\Debug\net9.0\Microsoft.ReportViewer.NETCore.dll
 C:\Users\Zakir\Project\ReportVisualizer\bin\Debug\net9.0\System.CodeDom.dll
@@ -999,3 +999,6 @@ C:\Users\Zakir\Project\ReportVisualizer\bin\Debug\net9.0\zh-Hans\System.ServiceM
 C:\Users\Zakir\Project\ReportVisualizer\bin\Debug\net9.0\zh-Hant\System.ServiceModel.Primitives.resources.dll
 C:\Users\Zakir\Project\ReportVisualizer\bin\Debug\net9.0\runtimes\win\lib\net9.0\Microsoft.Win32.SystemEvents.dll
 C:\Users\Zakir\Project\ReportVisualizer\obj\Debug\net9.0\compressed\q9lj65yk0u-5ipweew5fc.gz
+=======
+D:\personal\ReportVisualizer\obj\Debug\net9.0\compressed\5bw2hh89z1-efsc3par5f.gz
+>>>>>>> 1e7e9de4625225dfefefa42b407b4936273e0553

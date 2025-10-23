@@ -16,6 +16,11 @@ namespace ReportVisualizer.DataAccessLayer.DatabaseConfig
         private static readonly object _lock = new object();
         private SqlConnection _connection;
 
+        public bool IsConnected
+        {
+            get { return _connection != null && _connection.State == ConnectionState.Open; }
+        }
+
         private DatabaseConnection()
         {
             // Private constructor to enforce singleton pattern
