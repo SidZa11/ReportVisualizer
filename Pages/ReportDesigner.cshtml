@@ -1,0 +1,62 @@
+@page
+@model ReportVisualizer.Pages.ReportDesignerModel
+@{
+    ViewData["Title"] = "Report Designer";
+}
+
+<h1>Edit Report: @Model.SelectedTemplate</h1>
+
+<form method="post">
+    <input type="hidden" asp-for="SelectedTemplate" />
+    <div class="form-group">
+        <label for="ReportContent">Report Content (RDLC XML):</label>
+        <textarea id="ReportContent" name="ReportContent" class="form-control" rows="20"></textarea>
+    </div>
+    <button type="submit" asp-page-handler="SaveReport" class="btn btn-primary">Save Report</button>
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Load report content if a template is selected
+            var selectedTemplate = $('#SelectedTemplate').val();
+            if (selectedTemplate) {
+                $.ajax({
+                    url: '?handler=LoadReportContent',
+                    type: 'GET',
+                    data: { templateName: selectedTemplate },
+                    success: function (data) {
+                        $('#ReportContent').val(data);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error loading report content:", error);
+                        alert("Error loading report content: " + xhr.responseText);
+                    }
+                });
+            }
+
+            $('button[asp-page-handler="SaveReport"]').click(function (e) {
+                e.preventDefault();
+                var reportContent = $('#ReportContent').val();
+                var reportName = $('#SelectedTemplate').val(); // Use selected template name as report name
+
+                if (reportContent && reportName) {
+                    $.ajax({
+                        url: '?handler=SaveReport',
+                        type: 'POST',
+                        data: { reportContent: reportContent, reportName: reportName },
+                        success: function () {
+                            alert("Report saved successfully!");
+                        },
+                        error: function (xhr, status, error) {
+                            console.error("Error saving report:", error);
+                            alert("Error saving report: " + xhr.responseText);
+                        }
+                    });
+                } else {
+                    alert("Report content or name cannot be empty.");
+                }
+            });
+        });
+    </script>
+}

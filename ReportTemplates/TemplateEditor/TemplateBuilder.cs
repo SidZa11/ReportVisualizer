@@ -86,9 +86,9 @@ namespace ReportVisualizer.ReportTemplates.TemplateEditor
             try
             {
                 // Ensure template name has .rdlc extension
-                if (!templateName.EndsWith(".rdlc", StringComparison.OrdinalIgnoreCase))
+                if (!templateName.EndsWith(".rdl", StringComparison.OrdinalIgnoreCase))
                 {
-                    templateName += ".rdlc";
+                    templateName += ".rdl";
                 }
                 
                 // Create template file path
@@ -129,7 +129,7 @@ namespace ReportVisualizer.ReportTemplates.TemplateEditor
             try
             {
                 // Get all .rdlc files in the templates directory
-                string[] templateFiles = Directory.GetFiles(_templatesDirectory, "*.rdlc");
+                string[] templateFiles = Directory.GetFiles(_templatesDirectory, "*.rdl");
                 
                 // Extract file names
                 for (int i = 0; i < templateFiles.Length; i++)

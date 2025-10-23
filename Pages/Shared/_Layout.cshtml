@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Report Visualizer</title>
     <link rel="stylesheet" href="~/css/site.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
     <header class="header">
@@ -17,6 +18,7 @@
                     <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/ReportTemplates" ? "active" : "")" href="/ReportTemplates">Templates</a>
                     <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/ReportDevelopment" ? "active" : "")" href="/ReportDevelopment">Create Reports</a>
                     <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/ReportViewer" ? "active" : "")" href="/ReportViewer">View Reports</a>
+
                 </nav>
             </div>
         </div>
@@ -48,6 +50,7 @@
         </div>
     </footer>
 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="~/js/site.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

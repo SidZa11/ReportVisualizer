@@ -61,6 +61,10 @@
               "target": "Package",
               "version": "[150.1537.0, )"
             },
+            "ReportViewerCore.NETCore": {
+              "target": "Package",
+              "version": "[15.1.26, )"
+            },
             "System.Data.SqlClient": {
               "target": "Package",
               "version": "[4.8.5, )"

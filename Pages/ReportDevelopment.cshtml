@@ -1,0 +1,63 @@
+@page
+@model ReportVisualizer.Pages.ReportDevelopmentModel
+@{
+    ViewData["Title"] = "Create Reports";
+}
+
+<h1>Create Reports</h1>
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger" role="alert">
+        @TempData["ErrorMessage"]
+    </div>
+}
+
+<form method="post">
+    <div class="form-group">
+        <label for="SelectedTemplate">Select Report Template:</label>
+        <select asp-for="SelectedTemplate" asp-items="new SelectList(Model.AvailableTemplates)" class="form-control"></select>
+    </div>
+    <button id="btnCreateReport" type="submit" asp-page-handler="CreateReport" class="btn btn-primary">Create</button>
+</form>
+
+<div id="reportContainer" style="margin-top: 20px;">
+    <iframe id="reportFrame" style="width:100%; height:800px; border:none;"></iframe>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#btnCreateReport').click(function (e) {
+                @* console.log("CreateReport button clicked"); *@
+                e.preventDefault();
+                var selectedTemplate = $('#SelectedTemplate').val();
+                @* console.log(selectedTemplate); *@
+                if (selectedTemplate) {
+                    $.ajax({
+                        url: '?handler=LaunchReportBuilder',
+                        type: 'POST',
+                        headers: {
+                            RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                        },
+                        data: { templateName: selectedTemplate },
+                        success: function (response) {
+                            if (response.success) {
+                                alert(response.message);
+                            } else {
+                                alert("Error: " + response.message);
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            alert("AJAX Error: " + xhr.responseText);
+                        }
+                    });
+                } else {
+                    alert("Please select a template.");
+                }
+            });
+        });
+    </script>
+
+
+}

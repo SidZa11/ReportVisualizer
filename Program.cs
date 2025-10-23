@@ -6,11 +6,10 @@ using ReportVisualizer.App_Start;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container
-builder.Services.AddRazorPages()
-    .AddRazorRuntimeCompilation();
+builder.Services.AddRazorPages();
 
 // Initialize database configuration
-DatabaseConfigInitializer.ConfigureServices(builder.Services, builder.Configuration);
+// DatabaseConfigInitializer.ConfigureServices(builder.Services, builder.Configuration);
 
 var app = builder.Build();
 
@@ -26,9 +25,9 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseAuthorization();
-
 app.MapRazorPages();
+
+app.UseAuthorization();
 
 // Database initialization is now handled through the ConfigureServices method
 // No need for additional initialization here
