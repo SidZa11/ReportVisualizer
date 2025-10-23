@@ -43,6 +43,11 @@ namespace ReportVisualizer.DataAccessLayer.Models
         public int ConnectionTimeout { get; set; } = 30;
 
         /// <summary>
+        /// Gets or sets whether to trust the server certificate (for SSL issues)
+        /// </summary>
+        public bool TrustServerCertificate { get; set; }
+
+        /// <summary>
         /// Gets or sets the date when the configuration was last modified
         /// </summary>
         public DateTime LastModified { get; set; } = DateTime.Now;
@@ -55,11 +60,11 @@ namespace ReportVisualizer.DataAccessLayer.Models
         {
             if (UseIntegratedSecurity)
             {
-                return $"Server={ServerName};Database={DatabaseName};Integrated Security=True;Connect Timeout={ConnectionTimeout};";
+                return $"Server={ServerName};Database={DatabaseName};Integrated Security=True;Connect Timeout={ConnectionTimeout};TrustServerCertificate={TrustServerCertificate};";
             }
             else
             {
-                return $"Server={ServerName};Database={DatabaseName};User Id={Username};Password={Password};Connect Timeout={ConnectionTimeout};";
+                return $"Server={ServerName};Database={DatabaseName};User Id={Username};Password={Password};Connect Timeout={ConnectionTimeout};TrustServerCertificate={TrustServerCertificate};";
             }
         }
     }

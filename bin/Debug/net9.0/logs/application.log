@@ -11,3 +11,31 @@
 2025-10-21 12:59:22 [ERROR] Error initializing database connection: A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: Named Pipes Provider, error: 40 - Could not open a connection to SQL Server)
 2025-10-21 12:59:22 [INFO] Global connection handler initialized
 2025-10-21 12:59:22 [INFO] Database services configured
+2025-10-21 16:39:18 [INFO] Configuration manager initialized
+2025-10-21 16:39:39 [ERROR] Error initializing database connection: A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: Named Pipes Provider, error: 40 - Could not open a connection to SQL Server)
+2025-10-21 16:39:39 [INFO] Global connection handler initialized
+2025-10-21 16:39:39 [INFO] Database services configured
+2025-10-22 10:25:42 [INFO] Configuration manager initialized
+2025-10-22 10:26:02 [ERROR] Error initializing database connection: A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: Named Pipes Provider, error: 40 - Could not open a connection to SQL Server)
+2025-10-22 10:26:02 [INFO] Global connection handler initialized
+2025-10-22 10:26:02 [INFO] Database services configured
+2025-10-22 11:32:13 [INFO] Configuration manager initialized
+2025-10-22 11:32:34 [ERROR] Error initializing database connection: A network-related or instance-specific error occurred while establishing a connection to SQL Server. The server was not found or was not accessible. Verify that the instance name is correct and that SQL Server is configured to allow remote connections. (provider: Named Pipes Provider, error: 40 - Could not open a connection to SQL Server)
+2025-10-22 11:32:34 [INFO] Global connection handler initialized
+2025-10-22 11:32:34 [INFO] Database services configured
+2025-10-22 11:38:16 [INFO] Configuration manager initialized
+2025-10-22 11:38:16 [ERROR] Error initializing database connection: A connection was successfully established with the server, but then an error occurred during the login process. (provider: SSL Provider, error: 0 - The certificate chain was issued by an authority that is not trusted.)
+2025-10-22 11:38:16 [INFO] Global connection handler initialized
+2025-10-22 11:38:16 [INFO] Database services configured
+2025-10-22 11:40:27 [INFO] Configuration manager initialized
+2025-10-22 11:40:27 [ERROR] Error initializing database connection: A connection was successfully established with the server, but then an error occurred during the login process. (provider: SSL Provider, error: 0 - The certificate chain was issued by an authority that is not trusted.)
+2025-10-22 11:40:27 [INFO] Global connection handler initialized
+2025-10-22 11:40:27 [INFO] Database services configured
+2025-10-22 12:13:30 [INFO] Configuration manager initialized
+2025-10-22 12:13:30 [ERROR] Error initializing database connection: A connection was successfully established with the server, but then an error occurred during the login process. (provider: SSL Provider, error: 0 - The certificate chain was issued by an authority that is not trusted.)
+2025-10-22 12:13:30 [INFO] Global connection handler initialized
+2025-10-22 12:13:30 [INFO] Database services configured
+2025-10-22 12:14:58 [INFO] Configuration manager initialized
+2025-10-22 12:14:58 [INFO] Database connection established successfully
+2025-10-22 12:14:58 [INFO] Global connection handler initialized
+2025-10-22 12:14:58 [INFO] Database services configured

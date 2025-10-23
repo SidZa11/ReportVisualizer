@@ -1,25 +1,27 @@
 {
   "format": 1,
   "restore": {
-    "D:\\personal\\ReportVisualizer\\ReportVisualizer.csproj": {}
+    "C:\\Users\\Zakir\\Project\\ReportVisualizer\\ReportVisualizer.csproj": {}
   },
   "projects": {
-    "D:\\personal\\ReportVisualizer\\ReportVisualizer.csproj": {
+    "C:\\Users\\Zakir\\Project\\ReportVisualizer\\ReportVisualizer.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\personal\\ReportVisualizer\\ReportVisualizer.csproj",
+        "projectUniqueName": "C:\\Users\\Zakir\\Project\\ReportVisualizer\\ReportVisualizer.csproj",
         "projectName": "ReportVisualizer",
-        "projectPath": "D:\\personal\\ReportVisualizer\\ReportVisualizer.csproj",
-        "packagesPath": "C:\\Users\\Cogneta_Emp-Zakir\\.nuget\\packages\\",
-        "outputPath": "D:\\personal\\ReportVisualizer\\obj\\",
+        "projectPath": "C:\\Users\\Zakir\\Project\\ReportVisualizer\\ReportVisualizer.csproj",
+        "packagesPath": "C:\\Users\\Acer\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Zakir\\Project\\ReportVisualizer\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Cogneta_Emp-Zakir\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\Acer\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
