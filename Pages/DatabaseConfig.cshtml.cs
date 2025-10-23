@@ -21,6 +21,7 @@ namespace ReportVisualizer.Pages
 
         public string? Message { get; set; }
         public string? ErrorMessage { get; set; }
+        public bool IsDbConnected { get; set; }
         public string GeneratedConnectionString { get; set; } = string.Empty;
 
         public DatabaseConfigPageModel(IConfiguration configuration)
@@ -32,6 +33,7 @@ namespace ReportVisualizer.Pages
         {
             try
             {
+                IsDbConnected = DataAccessLayer.DatabaseConfig.DatabaseConnection.Instance.IsConnected;
                 var current = _configuration.GetConnectionString("DefaultConnection");
                 if (!string.IsNullOrWhiteSpace(current))
                 {

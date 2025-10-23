@@ -462,7 +462,6 @@ D:\personal\ReportVisualizer\obj\Debug\net9.0\rjimswa.dswa.cache.json
 D:\personal\ReportVisualizer\obj\Debug\net9.0\rjsmrazor.dswa.cache.json
 D:\personal\ReportVisualizer\obj\Debug\net9.0\rjsmcshtml.dswa.cache.json
 D:\personal\ReportVisualizer\obj\Debug\net9.0\scopedcss\bundle\ReportVisualizer.styles.css
-D:\personal\ReportVisualizer\obj\Debug\net9.0\compressed\5bw2hh89z1-j3nj5iyy7a.gz
 D:\personal\ReportVisualizer\obj\Debug\net9.0\staticwebassets.build.json
 D:\personal\ReportVisualizer\obj\Debug\net9.0\staticwebassets.build.json.cache
 D:\personal\ReportVisualizer\obj\Debug\net9.0\staticwebassets.development.json
@@ -950,3 +949,4 @@ C:\Users\Zakir\Project\ReportVisualizer\obj\Debug\net9.0\refint\ReportVisualizer
 C:\Users\Zakir\Project\ReportVisualizer\obj\Debug\net9.0\ReportVisualizer.pdb
 C:\Users\Zakir\Project\ReportVisualizer\obj\Debug\net9.0\ReportVisualizer.genruntimeconfig.cache
 C:\Users\Zakir\Project\ReportVisualizer\obj\Debug\net9.0\ref\ReportVisualizer.dll
+D:\personal\ReportVisualizer\obj\Debug\net9.0\compressed\5bw2hh89z1-efsc3par5f.gz

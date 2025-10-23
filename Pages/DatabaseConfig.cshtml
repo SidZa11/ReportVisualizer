@@ -11,15 +11,28 @@
                 Database Configuration
             </div>
             <div class="card-body">
-                <p>Configure your database connection. You can test the connection before saving.</p>
+                <p class="mb-4">Configure your database connection. You can test the connection before saving.</p>
+
+                @if (Model.IsDbConnected)
+                {
+                    <div class="alert alert-success" role="alert">
+                        Database is connected!
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning" role="alert">
+                        Database is not connected. Please configure and test.
+                    </div>
+                }
 
                 @if (!string.IsNullOrEmpty(Model.Message))
                 {
-                    <div class="alert success">@Model.Message</div>
+                    <div class="alert alert-info" role="alert">@Model.Message</div>
                 }
                 @if (!string.IsNullOrEmpty(Model.ErrorMessage))
                 {
-                    <div class="alert error">@Model.ErrorMessage</div>
+                    <div class="alert alert-danger" role="alert">@Model.ErrorMessage</div>
                 }
 
                 <form method="post">
@@ -60,15 +73,15 @@
                         }
                     </div>
 
-                    <div class="mt-3">
-                        <button type="submit" asp-page-handler="Test" class="btn">Test Connection</button>
-                        <button type="submit" asp-page-handler="Save" class="btn">Save Configuration</button>
+                    <div class="d-flex justify-content-end mt-4">
+                        <button type="submit" asp-page-handler="Test" class="btn btn-primary me-2">Test Connection</button>
+                        <button type="submit" asp-page-handler="Save" class="btn btn-success">Save Configuration</button>
                     </div>
                 </form>
 
-                <div class="mt-4">
-                    <h5>Generated Connection String</h5>
-                    <code>@Model.GeneratedConnectionString</code>
+                <div class="mt-5 p-3 bg-light rounded shadow-sm">
+                    <h5 class="text-primary">Generated Connection String</h5>
+                    <code class="d-block text-break">@Model.GeneratedConnectionString</code>
                 </div>
 
             </div>
