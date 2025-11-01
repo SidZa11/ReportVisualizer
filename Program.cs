@@ -32,4 +32,12 @@ app.UseAuthorization();
 // Database initialization is now handled through the ConfigureServices method
 // No need for additional initialization here
 
-app.Run();
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Application terminated unexpectedly: {ex.Message}");
+    Console.WriteLine(ex.StackTrace);
+}

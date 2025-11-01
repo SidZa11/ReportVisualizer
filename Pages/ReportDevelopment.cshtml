@@ -16,48 +16,80 @@
 <form method="post">
     <div class="form-group">
         <label for="SelectedTemplate">Select Report Template:</label>
-        <select asp-for="SelectedTemplate" asp-items="new SelectList(Model.AvailableTemplates)" class="form-control"></select>
+        <select id="reportTemplateSelector" asp-for="SelectedTemplate" asp-items="new SelectList(Model.AvailableTemplates)" class="form-control"></select>
     </div>
-    <button id="btnCreateReport" type="submit" asp-page-handler="CreateReport" class="btn btn-primary">Create</button>
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#reportNameModal">Create</button>
+
+    <div class="modal fade" id="reportNameModal" tabindex="-1" role="dialog" aria-labelledby="reportNameModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reportNameModalLabel">Create New Report</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="newReportName">Report Name</label>
+                        <input type="text" class="form-control" id="newReportName" placeholder="Enter report name">
+                    </div>
+                    <div class="form-group">
+                        <label for="templateSelect">Select Template</label>
+                        <select class="form-control" id="templateSelect">
+                            <option value="">-- Select an existing template --</option>
+                            @foreach (var template in Model.AvailableTemplates)
+                            {
+                                <option value="@template">@template</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveReportBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </form>
 
-<div id="reportContainer" style="margin-top: 20px;">
-    <iframe id="reportFrame" style="width:100%; height:800px; border:none;"></iframe>
-</div>
-
 @section Scripts {
+    @await Html.PartialAsync("_ReportNamePopup")
+
     <script>
         $(document).ready(function () {
-            $('#btnCreateReport').click(function (e) {
-                @* console.log("CreateReport button clicked"); *@
-                e.preventDefault();
-                var selectedTemplate = $('#SelectedTemplate').val();
-                @* console.log(selectedTemplate); *@
-                if (selectedTemplate) {
-                    $.ajax({
-                        url: '?handler=LaunchReportBuilder',
-                        type: 'POST',
-                        headers: {
-                            RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
-                        },
-                        data: { templateName: selectedTemplate },
-                        success: function (response) {
-                            if (response.success) {
-                                alert(response.message);
-                            } else {
-                                alert("Error: " + response.message);
-                            }
-                        },
-                        error: function (xhr, status, error) {
-                            alert("AJAX Error: " + xhr.responseText);
-                        }
-                    });
-                } else {
-                    alert("Please select a template.");
+            $('#saveReportBtn').on('click', function () {
+                var reportName = $('#newReportName').val();
+                var selectedTemplate = $('#templateSelect').val();
+
+                if (!reportName) {
+                    alert('Please enter a report name.');
+                    return;
                 }
+
+                $.ajax({
+                    url: '/ReportDevelopment?handler=SaveReport',
+                    type: 'POST',
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    data: {
+                        reportName: reportName,
+                        templateName: selectedTemplate
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            window.location.href = '/ReportDesigner?reportName=' + reportName;
+                        } else {
+                            alert('Error saving report: ' + response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        alert('An error occurred: ' + xhr.responseText);
+                    }
+                });
             });
         });
     </script>
-
-
 }

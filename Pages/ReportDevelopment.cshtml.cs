@@ -13,7 +13,7 @@ namespace ReportVisualizer.Pages
     public class ReportDevelopmentModel : PageModel
     {
         private readonly string _reportTemplatesPath = Path.Combine(Directory.GetCurrentDirectory(), "ReportTemplates", "RDLC");
-        private readonly string _finalReportsPath = Path.Combine(Directory.GetCurrentDirectory(), "FinalReports");
+        private readonly string _finalReportsPath = Path.Combine(Directory.GetCurrentDirectory(), "ReportViewer", "Reports");
         private readonly IConfiguration _configuration;
 
         public ReportDevelopmentModel(IConfiguration configuration)
@@ -113,7 +113,47 @@ namespace ReportVisualizer.Pages
                 OnGet(); // Re-populate AvailableTemplates
                 return Page();
             }
+        }
 
+        public IActionResult OnPostSaveReport(string templateName, string reportName, bool overrideExisting)
+        {
+            Console.WriteLine("OnPostSaveReport method invoked.");
+            if (string.IsNullOrEmpty(templateName) || string.IsNullOrEmpty(reportName))
+            {
+                return new JsonResult(new { success = false, message = "Template name and report name cannot be empty." });
+            }
+
+            string sourceFilePath = Path.Combine(_reportTemplatesPath, templateName + ".rdl");
+            string destinationDirectory = Path.Combine(Directory.GetCurrentDirectory(), "ReportViewer", "Reports");
+            string destinationFilePath = Path.Combine(destinationDirectory, reportName + ".rdl");
+
+            Console.WriteLine($"Source File Path: {sourceFilePath}");
+            Console.WriteLine($"Destination Directory: {destinationDirectory}");
+            Console.WriteLine($"Destination File Path: {destinationFilePath}");
+
+            try
+            {
+                if (!Directory.Exists(destinationDirectory))
+                {
+                    Directory.CreateDirectory(destinationDirectory);
+                }
+
+                if (System.IO.File.Exists(destinationFilePath) && !overrideExisting)
+                {
+                    return new JsonResult(new { success = false, message = "exists" });
+                }
+
+                System.IO.File.Copy(sourceFilePath, destinationFilePath, true); // Overwrite if exists
+
+                return new JsonResult(new { success = true, message = $"Report '{reportName}' saved successfully." });
+            }
+            catch (Exception ex)
+            {
+                // Log the exception details on the server-side for debugging
+                Console.WriteLine($"Error saving report: {ex.Message}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+                return new JsonResult(new { success = false, message = $"Error saving report: {ex.Message}" });
+            }
         }
 
         private List<string> GetAvailableTemplates()

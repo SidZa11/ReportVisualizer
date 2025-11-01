@@ -11,7 +11,7 @@ namespace ReportVisualizer.Pages
     public class ReportDesignerModel : PageModel
     {
         private readonly string _reportTemplatesPath = Path.Combine(Directory.GetCurrentDirectory(), "ReportTemplates", "RDLC");
-        private readonly string _finalReportsPath = Path.Combine(Directory.GetCurrentDirectory(), "FinalReports");
+        private readonly string _finalReportsPath = Path.Combine(Directory.GetCurrentDirectory(), "ReportViewer", "Reports");
 
         [BindProperty]
         public string SelectedTemplate { get; set; }
