@@ -1,0 +1,47 @@
+@model ReportVisualizer.Pages.ReportViewerModel
+
+<div id="parameterInputPopup" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Enter Report Parameters</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" asp-page-handler="SubmitParameters" asp-route-reportName="@Model.ReportName">
+                <div class="modal-body">
+                    @if (Model.QueryParameters != null && Model.QueryParameters.Any())
+                    {
+                        @foreach (var param in Model.QueryParameters)
+                        {
+                            <div class="form-group">
+                                <label for="@param.Name">@param.Prompt</label>
+                                @if (param.Name.Contains("Date", StringComparison.OrdinalIgnoreCase) || param.Name.Contains("Time", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <input type="datetime-local"
+                                        class="form-control"
+                                        name="SubmittedParameters[@param.Name]"
+                                        required 
+                                    />
+                                }
+                                else
+                                {
+                                    <input type="text" class="form-control" id="@param.Name" name="SubmittedParameters[@param.Name]" required />
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p>No parameters required for this report.</p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">View Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -10,6 +10,7 @@ using System.Diagnostics;
 
 namespace ReportVisualizer.Pages
 {
+[ValidateAntiForgeryToken]
     public class ReportDevelopmentModel : PageModel
     {
         private readonly string _reportTemplatesPath = Path.Combine(Directory.GetCurrentDirectory(), "ReportTemplates", "RDLC");
@@ -27,133 +28,154 @@ namespace ReportVisualizer.Pages
 
         public List<string> AvailableTemplates { get; set; }
 
-        public IActionResult OnGet()
+        public IActionResult OnGet(string reportName)
         {
+            // load templates for dropdown
             AvailableTemplates = GetAvailableTemplates();
+
+            // if redirected from edit flow → open report builder
+            if (TempData["LaunchReportPath"] != null)
+            {
+                string path = TempData["LaunchReportPath"].ToString();
+                LaunchReportBuilderProcess(path);
+            }
+
             return Page();
         }
 
+
         public JsonResult LaunchReportBuilder(string templateName)
-    {
-        try
         {
-            Console.WriteLine(templateName);
-            if (string.IsNullOrEmpty(templateName))
-            {
-                return new JsonResult(new { success = false, message = "Template name cannot be empty." });
-            }
-            // Path to Report Builder executable
-            string reportBuilderPath = @"C:\Program Files (x86)\Microsoft SQL Server Report Builder 15\ReportBuilder.exe";
-
-            // Optional: Template path or parameters
-            string templateFile = Path.Combine(AppContext.BaseDirectory, "ReportTemplates", "RDLC", $"{templateName}.rdl");
-            if (!System.IO.File.Exists(templateFile))
-            {
-                return new JsonResult(new { success = false, message = $"Report template '{templateName}.rdl' not found." });
-            }
-            
-            // Prepare process start info
-            var psi = new ProcessStartInfo
-            {
-                FileName = reportBuilderPath,
-                Arguments = $"\"{templateFile}\"", // Launch with template file
-                UseShellExecute = true // Required to open desktop app
-            };
-
-            Process.Start(psi);
-
-            return new JsonResult(new { success = true, message = $"Report Builder launched for {templateName}." });
-        }
-        catch (Exception ex)
-        {
-            return new JsonResult(new { success = false, message = ex.Message });
-        }
-    }
-
-
-    public IActionResult OnPostLaunchReportBuilder(string templateName)
-    {
-        if (string.IsNullOrEmpty(templateName))
-        {
-            return BadRequest("Template name cannot be empty.");
-        }
-
-        string reportBuilderPath = _configuration["ReportBuilder:Path"];
-        if (string.IsNullOrEmpty(reportBuilderPath))
-        {
-            return BadRequest("Report Builder path is not configured in appsettings.json.");
-        }
-
-        string rdlcFilePath = Path.Combine(_reportTemplatesPath, templateName + ".rdl");
-        // Console.WriteLine($"rdlcFilePath: {rdlcFilePath}, templateName: {templateName}, reportBuilderPath: {reportBuilderPath}");
-        if (!System.IO.File.Exists(rdlcFilePath))
-        {
-            return NotFound($"Report template '{templateName}.rdl' not found.");
-        }
-
             try
             {
+                Console.WriteLine(templateName);
+                if (string.IsNullOrEmpty(templateName))
+                {
+                    return new JsonResult(new { success = false, message = "Template name cannot be empty." });
+                }
+                // Path to Report Builder executable
+                string reportBuilderPath = @"C:\Program Files (x86)\Microsoft SQL Server Report Builder 15\ReportBuilder.exe";
+
+                // Optional: Template path or parameters
+                string templateFile = Path.Combine(AppContext.BaseDirectory, "ReportTemplates", "RDLC", $"{templateName}.rdl");
+                if (!System.IO.File.Exists(templateFile))
+                {
+                    return new JsonResult(new { success = false, message = $"Report template '{templateName}.rdl' not found." });
+                }
+                
+                // Prepare process start info
                 var psi = new ProcessStartInfo
                 {
                     FileName = reportBuilderPath,
-                    Arguments = $"\"{rdlcFilePath}\"",
-                    UseShellExecute = true,   // Needed for .exe apps
-                    WorkingDirectory = Path.GetDirectoryName(reportBuilderPath)
+                    Arguments = $"\"{templateFile}\"", // Launch with template file
+                    UseShellExecute = true // Required to open desktop app
                 };
 
                 Process.Start(psi);
 
-                return new JsonResult(new { success = true, message = "Report Builder launched successfully." });
+                return new JsonResult(new { success = true, message = $"Report Builder launched for {templateName}." });
             }
             catch (Exception ex)
             {
-                // Console.WriteLine($"Error launching Report Builder: {ex.Message}");
-                // Console.WriteLine($"Stack Trace: {ex.StackTrace}");
-                TempData["ErrorMessage"] = $"Error launching Report Builder: {ex.Message}";
-                OnGet(); // Re-populate AvailableTemplates
-                return Page();
+                return new JsonResult(new { success = false, message = ex.Message });
             }
         }
 
-        public IActionResult OnPostSaveReport(string templateName, string reportName, bool overrideExisting)
+
+        public IActionResult OnPostLaunchReportBuilder(string reportName, string templateName)
         {
-            Console.WriteLine("OnPostSaveReport method invoked.");
-            if (string.IsNullOrEmpty(templateName) || string.IsNullOrEmpty(reportName))
+            if (string.IsNullOrEmpty(reportName) || string.IsNullOrEmpty(templateName))
+                return BadRequest();
+
+            string reportFilePath = Path.Combine(_finalReportsPath, reportName + ".rdl");
+            string templateFilePath = Path.Combine(_reportTemplatesPath, templateName + ".rdl");
+            
+            if (!System.IO.File.Exists(reportFilePath))
             {
-                return new JsonResult(new { success = false, message = "Template name and report name cannot be empty." });
+                if (!System.IO.File.Exists(templateFilePath))
+                    return BadRequest("Template not found");
+
+                System.IO.File.Copy(templateFilePath, reportFilePath, true);
             }
 
-            string sourceFilePath = Path.Combine(_reportTemplatesPath, templateName + ".rdl");
-            string destinationDirectory = Path.Combine(Directory.GetCurrentDirectory(), "ReportViewer", "Reports");
-            string destinationFilePath = Path.Combine(destinationDirectory, reportName + ".rdl");
+            // store path for next request
+            // TempData["LaunchReportPath"] = reportFilePath;
 
-            Console.WriteLine($"Source File Path: {sourceFilePath}");
-            Console.WriteLine($"Destination Directory: {destinationDirectory}");
-            Console.WriteLine($"Destination File Path: {destinationFilePath}");
+            LaunchReportBuilderProcess(reportFilePath);
 
-            try
+            return RedirectToPage("/ReportViewer", new { reportName = reportName });
+        }
+
+
+
+    private void LaunchReportBuilderProcess(string rdlPath)
+    {
+        if (!System.IO.File.Exists(rdlPath))
+            return;
+
+        var psi = new ProcessStartInfo
+        {
+            FileName = rdlPath,
+            UseShellExecute = true
+        };
+
+        Process.Start(psi);
+    }
+
+
+    public IActionResult OnPostCreateReport(string templateName, string reportName)
+    {
+        Console.WriteLine("OnPostCreateReport method invoked.");
+        Console.WriteLine($"Received - Template Name: {templateName}, Report Name: {reportName}");
+
+        if (string.IsNullOrEmpty(templateName) || string.IsNullOrEmpty(reportName))
+        {
+            Console.WriteLine("Validation Error: Template name or report name is empty.");
+            return new JsonResult(new { success = false, message = "Template name and report name cannot be empty." });
+        }
+
+        string sourceFilePath = Path.Combine(_reportTemplatesPath, templateName + ".rdl");
+        string destinationDirectory = Path.Combine(Directory.GetCurrentDirectory(), "ReportViewer", "Reports");
+        string destinationFilePath = Path.Combine(destinationDirectory, reportName + ".rdl");
+
+        Console.WriteLine($"Source File Path: {sourceFilePath}");
+        Console.WriteLine($"Destination Directory: {destinationDirectory}");
+        Console.WriteLine($"Destination File Path: {destinationFilePath}");
+
+        try
+        {
+            if (!Directory.Exists(destinationDirectory))
             {
-                if (!Directory.Exists(destinationDirectory))
-                {
-                    Directory.CreateDirectory(destinationDirectory);
-                }
-
-                if (System.IO.File.Exists(destinationFilePath) && !overrideExisting)
-                {
-                    return new JsonResult(new { success = false, message = "exists" });
-                }
-
-                System.IO.File.Copy(sourceFilePath, destinationFilePath, true); // Overwrite if exists
-
-                return new JsonResult(new { success = true, message = $"Report '{reportName}' saved successfully." });
+                Directory.CreateDirectory(destinationDirectory);
             }
-            catch (Exception ex)
+
+            System.IO.File.Copy(sourceFilePath, destinationFilePath, true); // Overwrite if exists
+            Console.WriteLine($"Report '{reportName}' created successfully at {destinationFilePath}");
+
+            // Launch Report Builder with the newly created report
+            LaunchReportBuilderProcess(destinationFilePath);
+
+            return new JsonResult(new { success = true, redirectUrl = $"/ReportViewer?reportName={reportName}" });
+        }
+        catch (Exception ex)
+        {
+            // Log the exception details on the server-side for debugging
+            Console.WriteLine($"Error saving report: {ex.Message}");
+            Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+            return new JsonResult(new { success = false, message = $"Error saving report: {ex.Message}" });
+        }
+    }
+
+        public JsonResult OnGetCheckReportExists(string reportName)
+        {
+            if (string.IsNullOrEmpty(reportName))
             {
-                // Log the exception details on the server-side for debugging
-                Console.WriteLine($"Error saving report: {ex.Message}");
-                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
-                return new JsonResult(new { success = false, message = $"Error saving report: {ex.Message}" });
+                return new JsonResult(new { exists = false, message = "Report name cannot be empty." });
             }
+
+            string reportFilePath = Path.Combine(_finalReportsPath, reportName + ".rdl");
+            bool exists = System.IO.File.Exists(reportFilePath);
+            return new JsonResult(new { exists = exists });
         }
 
         private List<string> GetAvailableTemplates()

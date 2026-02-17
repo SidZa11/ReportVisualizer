@@ -10,6 +10,7 @@ namespace ReportVisualizer.Utilities
     {
         private static readonly DatabaseConnection _databaseConnection = DatabaseConnection.Instance;
         private static bool _isInitialized = false;
+        public static string ConnectionString { get; set; }
 
         /// <summary>
         /// Initializes the global connection handler
@@ -21,7 +22,7 @@ namespace ReportVisualizer.Utilities
                 try
                 {
                     // Access the connection to initialize it
-                    var connection = _databaseConnection.Connection;
+                    _databaseConnection.InitializeConnection(ConnectionString);
                     _isInitialized = true;
                     Logger.Log("Global connection handler initialized");
                 }

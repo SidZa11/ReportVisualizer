@@ -14,81 +14,128 @@
 }
 
 <form method="post">
+    @Html.AntiForgeryToken()
     <div class="form-group">
         <label for="SelectedTemplate">Select Report Template:</label>
         <select id="reportTemplateSelector" asp-for="SelectedTemplate" asp-items="new SelectList(Model.AvailableTemplates)" class="form-control"></select>
+    <div class="form-group">
+        <label for="ReportName">Report Name:</label>
+        <input type="text" id="reportNameInput" name="ReportName" class="form-control" />
     </div>
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#reportNameModal">Create</button>
-
-    <div class="modal fade" id="reportNameModal" tabindex="-1" role="dialog" aria-labelledby="reportNameModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="reportNameModalLabel">Create New Report</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="newReportName">Report Name</label>
-                        <input type="text" class="form-control" id="newReportName" placeholder="Enter report name">
-                    </div>
-                    <div class="form-group">
-                        <label for="templateSelect">Select Template</label>
-                        <select class="form-control" id="templateSelect">
-                            <option value="">-- Select an existing template --</option>
-                            @foreach (var template in Model.AvailableTemplates)
-                            {
-                                <option value="@template">@template</option>
-                            }
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveReportBtn">Save</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <button type="button" id="createReportButton" class="btn btn-primary">Create</button>
 </form>
 
 @section Scripts {
-    @await Html.PartialAsync("_ReportNamePopup")
+    @* @await Html.PartialAsync("_ReportNamePopup") *@
 
     <script>
         $(document).ready(function () {
-            $('#saveReportBtn').on('click', function () {
-                var reportName = $('#newReportName').val();
-                var selectedTemplate = $('#templateSelect').val();
+            $('#editTemplateButton').on('click', function () {
+                var reportName = $('#reportNameInput').val();
+                var selectedTemplate = $('#reportTemplateSelector').val();
 
                 if (!reportName) {
                     alert('Please enter a report name.');
                     return;
                 }
 
-                $.ajax({
-                    url: '/ReportDevelopment?handler=SaveReport',
-                    type: 'POST',
-                    headers: {
-                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
-                    },
-                    data: {
-                        reportName: reportName,
-                        templateName: selectedTemplate
-                    },
-                    success: function (response) {
-                        if (response.success) {
-                            window.location.href = '/ReportDesigner?reportName=' + reportName;
-                        } else {
-                            alert('Error saving report: ' + response.message);
+                // Logic for "Edit Template"
+                // This will open the selected template in the report builder
+                window.location.href = '/ReportDesigner?templateName=' + encodeURIComponent(selectedTemplate);
+            });
+
+            $('#createReportButton').on('click', function () {
+                var reportName = $('#reportNameInput').val();
+                var selectedTemplate = $('#reportTemplateSelector').val();
+
+                if (!reportName) {
+                    alert('Please enter a report name.');
+                    return;
+                }
+
+                // Function to create the report
+                function createReport() {
+                    $.ajax({
+                        type: "POST",
+                        url: "?handler=CreateReport",
+                        beforeSend: function (xhr) {
+                            xhr.setRequestHeader("RequestVerificationToken",
+                                $('input:hidden[name="__RequestVerificationToken"]').val());
+                        },
+                        data: {
+                            reportName: reportName,
+                            templateName: selectedTemplate
+                        },
+                        success: function (response) {
+                            if (response.success) {
+                                window.location.href = response.redirectUrl;
+                            } else {
+                                alert(response.message);
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.error("AJAX Error: ", status, error, xhr);
+                            alert("Error saving report: " + xhr.responseText);
                         }
-                    },
-                    error: function (xhr, status, error) {
-                        alert('An error occurred: ' + xhr.responseText);
+                    });
+                }
+
+                // Check if report exists
+                $.ajax({
+                type: "GET",
+                url: "?handler=CheckReportExists",
+                data: { reportName: reportName },
+                success: function (response) {
+
+                    if (response.exists) {
+
+                        if (confirm('A report with this name already exists. Do you want to edit it in Report Builder?')) {
+
+                            // ---------- IMPORTANT PART ----------
+                            // We must do a normal form POST instead of AJAX
+                            // so Windows allows ReportBuilder GUI to open
+
+                            let form = document.createElement("form");
+                            form.method = "post";
+                            form.action = "?handler=LaunchReportBuilder";
+
+                            // reportName
+                            let r = document.createElement("input");
+                            r.type = "hidden";
+                            r.name = "reportName";
+                            r.value = reportName;
+                            form.appendChild(r);
+
+                            // templateName
+                            let t = document.createElement("input");
+                            t.type = "hidden";
+                            t.name = "templateName";
+                            t.value = selectedTemplate;
+                            form.appendChild(t);
+
+                            // antiforgery token
+                            let token = document.querySelector('input[name="__RequestVerificationToken"]');
+                            if (token) {
+                                form.appendChild(token.cloneNode(true));
+                            }
+
+                            document.body.appendChild(form);
+                            form.submit();
+
+                            // DO NOT continue JS execution
+                            return;
+                        }
                     }
-                });
+                    else {
+                        createReport(); // create new report (your existing logic)
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error checking report existence: ", status, error, xhr);
+                    alert("Error checking report existence.");
+                }
+            });
+
             });
         });
     </script>

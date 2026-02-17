@@ -75,41 +75,22 @@ namespace ReportVisualizer.Pages
             try
             {
                 GeneratedConnectionString = Config.GenerateConnectionString();
+                ReportVisualizer.Utilities.GlobalConnectionHandler.ConnectionString = GeneratedConnectionString;
+                ReportVisualizer.Utilities.GlobalConnectionHandler.Initialize();
+                IsDbConnected = ReportVisualizer.DataAccessLayer.DatabaseConfig.DatabaseConnection.Instance.IsConnected;
 
-                var appSettingsPath = Path.Combine(Directory.GetCurrentDirectory(), "appsettings.json");
-                if (!System.IO.File.Exists(appSettingsPath))
+                if (IsDbConnected)
                 {
-                    throw new FileNotFoundException($"appsettings.json not found at {appSettingsPath}");
-                }
-
-                var jsonText = System.IO.File.ReadAllText(appSettingsPath);
-                var json = JsonNode.Parse(jsonText) as JsonObject;
-                if (json == null)
-                {
-                    throw new InvalidOperationException("Invalid appsettings.json format.");
-                }
-
-                JsonObject connectionStrings;
-                if (json.ContainsKey("ConnectionStrings") && json["ConnectionStrings"] is JsonObject existing)
-                {
-                    connectionStrings = existing;
+                    Message = "Database configuration saved and connected successfully.";
                 }
                 else
                 {
-                    connectionStrings = new JsonObject();
-                    json["ConnectionStrings"] = connectionStrings;
+                    ErrorMessage = "Database configuration saved, but connection failed. Please check details.";
                 }
-
-                connectionStrings["DefaultConnection"] = GeneratedConnectionString;
-
-                var updated = json.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
-                System.IO.File.WriteAllText(appSettingsPath, updated);
-
-                Message = "Configuration saved. Restart the application to apply changes.";
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"Failed to save configuration: {ex.Message}";
+                ErrorMessage = $"Error saving database configuration: {ex.Message}";
             }
             return Page();
         }

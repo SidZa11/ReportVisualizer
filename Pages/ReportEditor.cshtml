@@ -1,0 +1,47 @@
+@page
+@model ReportVisualizer.Pages.ReportEditorModel
+@{
+    ViewData["Title"] = "Report Editor";
+}
+
+<h1>Report Editor</h1>
+
+<form method="post" id="reportForm">
+    <input type="hidden" asp-for="SelectedTemplate" id="SelectedTemplate" />
+    <div class="form-group">
+        <label for="ReportContent">Report Content (RDLC XML):</label>
+        <textarea id="ReportContent" name="ReportContent" class="form-control" rows="20">@Model.ReportContent</textarea>
+    </div>
+    <button type="submit" asp-page-handler="SaveReport" class="btn btn-primary">Save Report</button>
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('button[asp-page-handler="SaveReport"]').click(function (e) {
+                e.preventDefault();
+                var reportContent = $('#ReportContent').val();
+                var selectedTemplate = $('#SelectedTemplate').val();
+
+                if (!reportContent || !selectedTemplate) {
+                    alert("Report content and template name cannot be empty.");
+                    return;
+                }
+
+                $.ajax({
+                    url: '?handler=SaveReport',
+                    type: 'POST',
+                    data: { reportContent: reportContent, reportName: selectedTemplate },
+                    success: function () {
+                        alert("Report saved successfully!");
+                        window.location.href = '/ReportDesigner'; // Redirect back to ReportDesigner
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error saving report:", error);
+                        alert("Error saving report: " + xhr.responseText);
+                    }
+                });
+            });
+        });
+    </script>
+}

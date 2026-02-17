@@ -440,3 +440,61 @@ html, body {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+.report-viewer-container {
+    display: flex;
+    gap: 20px; /* Space between the two sections */
+}
+
+.report-list-section {
+    flex: 0 0 250px; /* Fixed width for the list section */
+    padding: 15px;
+    border-right: 1px solid #eee; /* Separator line */
+}
+
+.report-content-section {
+    flex-grow: 1; /* Takes up the remaining space */
+    padding: 15px;
+}
+
+.report-list-section h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.report-content-section h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Ensure padding doesn't increase width */
+}
+
+.report-panel {
+    border-radius: 12px;
+}
+
+.report-viewer {
+    border-radius: 12px;
+    min-height: 650px;
+}
+
+#reportContainer {
+    overflow: auto;
+    background: #ffffff;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+.btn-sm {
+    margin-left: 5px;
+}

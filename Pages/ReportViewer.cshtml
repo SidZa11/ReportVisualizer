@@ -1,0 +1,137 @@
+@page
+@model ReportVisualizer.Pages.ReportViewerModel
+<link rel="stylesheet" href="../css/site.css" asp-append-version="true" />
+@{
+    ViewData["Title"] = "Report Viewer";
+}
+
+<div class="container-fluid mt-3">
+    <div class="row">
+
+        <!-- LEFT PANEL -->
+        <div class="col-md-3">
+            <div class="card shadow-sm report-panel">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Reports</h5>
+                </div>
+
+                <div class="card-body">
+                    @if (Model.AvailableReports != null && Model.AvailableReports.Any())
+                    {
+                        <form method="get" id="reportSelectionForm">
+                            <select name="reportName" class="form-control mb-3 h-50" id="reportSelect">
+                                <option value="">-- Select a Report --</option>
+                                @foreach (var report in Model.AvailableReports)
+                                {
+                                    <option value="@report" selected="@(report == Model.ReportName)">@report</option>
+                                }
+                            </select>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">View</button>
+                                <button type="button" class="btn btn-warning" onclick="editReport()">Edit</button>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <p>No reports available.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+
+        <!-- RIGHT PANEL -->
+        <div class="col-md-9">
+            <div class="card shadow-sm report-viewer">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>
+                        @(string.IsNullOrEmpty(Model.ReportName) ? "Report Preview" : Model.ReportName)
+                    </span>
+
+                    <!-- Export Buttons -->
+                    <div>
+                        <button class="btn btn-sm btn-success" onclick="exportReport('excel')">Excel</button>
+                        <button class="btn btn-sm btn-danger" onclick="exportReport('pdf')">PDF</button>
+                        <button class="btn btn-sm btn-secondary" onclick="printReport()">Print</button>
+                    </div>
+                </div>
+
+                <div class="card-body overflow-auto" id="reportContainer">
+                    @if (Model.ShowParameterPopup)
+                    {
+                        <partial name="_ParameterInputPopup" model="Model" />
+                    }
+                    else
+                    {
+                        @Html.Raw(Model.ReportHtmlContent)
+                    }
+                    
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        function editReport() {
+            var report = document.getElementById("reportSelect").value;
+
+            if (!report) {
+                alert("Please select a report first");
+                return;
+            }
+
+            // Call backend to get local file path
+            fetch(`/ReportViewer?handler=EditPath&reportName=` + encodeURIComponent(report))
+                .then(r => r.text())
+                .then(path => {
+                    if (path.startsWith("ERROR")) {
+                        alert(path);
+                        return;
+                    }
+
+                    // Launch Report Builder
+                    //window.location.href = "ms-rdl:ofe|u|" + path;
+                });
+        }
+
+        function exportReport(type) {
+            var report = document.getElementById("reportSelect").value;
+
+            if (!report) {
+                alert("Select report first");
+                return;
+            }
+
+            window.open(`/ReportViewer?handler=Export&reportName=${report}&format=${type}`, "_blank");
+        }
+
+        function printReport() {
+            var content = document.getElementById("reportContainer").innerHTML;
+
+            var w = window.open('', '', 'height=800,width=1200');
+            w.document.write('<html><head><title>Print Report</title>');
+            w.document.write('</head><body>');
+            w.document.write(content);
+            w.document.write('</body></html>');
+            w.document.close();
+            w.print();
+        }
+
+        $(document).ready(function () {
+            if (@Model.ShowParameterPopup.ToString().ToLower()) {
+                $('#parameterInputPopup').modal({
+                    backdrop: 'static', // Prevent closing by clicking outside
+                    keyboard: false // Prevent closing by pressing escape key
+                });
+                $('#parameterInputPopup').modal('show');
+            }
+        });
+    </script>
+}
+</div>

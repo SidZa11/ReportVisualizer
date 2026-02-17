@@ -56,7 +56,10 @@ namespace ReportVisualizer.DataAccessLayer.DatabaseConfig
             {
                 if (_connection == null || _connection.State == ConnectionState.Closed)
                 {
-                    InitializeConnection();
+                    // Connection should be initialized via GlobalConnectionHandler.Initialize()
+                    // If it's null or closed here, it means initialization failed or hasn't happened.
+                    // We should not attempt to re-initialize without a connection string.
+                    throw new InvalidOperationException("Database connection is not initialized or is closed. Please ensure GlobalConnectionHandler.Initialize() has been called with a valid connection string.");
                 }
                 return _connection;
             }
@@ -65,11 +68,17 @@ namespace ReportVisualizer.DataAccessLayer.DatabaseConfig
         /// <summary>
         /// Initializes the database connection using configuration settings
         /// </summary>
-        private void InitializeConnection()
+        public void InitializeConnection(string connectionString)
         {
             try
             {
-                string connectionString = ConfigManager.GetConnectionString();
+                if (string.IsNullOrEmpty(connectionString))
+                {
+                    Logger.LogError("Connection string is null or empty. Cannot initialize database connection.");
+                    _connection = null;
+                    return;
+                }
+
                 _connection = new SqlConnection(connectionString);
                 _connection.Open();
                 Logger.Log("Database connection established successfully");
@@ -77,7 +86,6 @@ namespace ReportVisualizer.DataAccessLayer.DatabaseConfig
             catch (Exception ex)
             {
                 Logger.LogError($"Error initializing database connection: {ex.Message}");
-                // Return null instead of throwing to allow application to start
                 _connection = null;
             }
         }
