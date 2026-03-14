@@ -1,0 +1,6 @@
+{
+    "pivot": [
+        "EXEC P_N {tab1}",
+        "EXEC P_N {tab2}"
+    ]
+}

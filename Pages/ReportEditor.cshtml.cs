@@ -5,9 +5,11 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Reporting.NETCore;
 using System.Text;
+using ReportVisualizer.Security;
 
 namespace ReportVisualizer.Pages
 {
+    [DevOnly]
     public class ReportEditorModel : PageModel
     {
         private readonly string _reportTemplatesPath = Path.Combine(Directory.GetCurrentDirectory(), "ReportTemplates", "RDLC");

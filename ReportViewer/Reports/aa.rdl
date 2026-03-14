@@ -11,7 +11,7 @@
       <am:Name>MSRB</am:Name>
       <am:Version>15.1.30001.02</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2026-02-16T17:35:54.8593634Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2026-02-21T07:26:51.9905119Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
@@ -59,7 +59,7 @@
   ,ProcessData.RO_Process_Status
 FROM
   ProcessData
-WHERE Time_Stamp between @StartTime and @EndTime</CommandText>
+WHERE (Time_Stamp between @StartTime and @EndTime)</CommandText>
       </Query>
       <Fields>
         <Field Name="Time_Stamp">
@@ -1898,7 +1898,7 @@ FROM
   <ReportParametersLayout>
     <GridLayoutDefinition>
       <NumberOfColumns>3</NumberOfColumns>
-      <NumberOfRows>1</NumberOfRows>
+      <NumberOfRows>2</NumberOfRows>
       <CellDefinitions>
         <CellDefinition>
           <ColumnIndex>0</ColumnIndex>

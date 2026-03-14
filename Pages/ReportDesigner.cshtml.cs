@@ -6,9 +6,11 @@ using System.Linq;
 using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using System.Data.Common;
+using ReportVisualizer.Security;
 
 namespace ReportVisualizer.Pages
 {
+    [DevOnly]
     public class ReportDesignerModel : PageModel
     {
         private readonly string _reportTemplatesPath = Path.Combine(Directory.GetCurrentDirectory(), "ReportTemplates", "RDLC");

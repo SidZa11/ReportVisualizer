@@ -47,9 +47,24 @@ namespace ReportVisualizer.Pages
         public async Task<IActionResult> OnGet(string reportName)
         {
             var reportsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "ReportViewer", "Reports");
+            // Ensure directory exists
+            if (!Directory.Exists(reportsDirectory))
+            {
+                AvailableReports = new List<string>();
+                ErrorMessage = "No reports available.";
+                return Page();
+            }
             AvailableReports = Directory.GetFiles(reportsDirectory, "*.rdl")
                                         .Select(Path.GetFileNameWithoutExtension)
                                         .ToList();
+            // If folder exists but empty
+            if (!AvailableReports.Any())
+            {
+                ErrorMessage = "No reports available.";
+                return Page();
+            }
+
+
 
             if (string.IsNullOrEmpty(reportName))
             {
@@ -119,7 +134,10 @@ namespace ReportVisualizer.Pages
                         k => k.Key.Replace("SubmittedParameters[", "").Replace("]", ""),
                         k => (object)k.Value.ToString()
                 );
-
+                HttpContext.Session.SetString(
+                    "LastReportParameters",
+                    System.Text.Json.JsonSerializer.Serialize(parametersAsObject)
+                );
                 ReportHtmlContent = await reportRenderer.RenderReport(reportFilePath, parametersAsObject);
             }
             catch (Exception ex)
@@ -161,13 +179,42 @@ namespace ReportVisualizer.Pages
             LocalReport report = new();
             report.ReportPath = reportPath;
 
-            var reportParameters = new Dictionary<string, object>();
+            Console.WriteLine($"OnGetExport called for report: {reportName}, format: {format}");
+            Console.WriteLine("Request Query Parameters:");
             foreach (var queryParam in Request.Query)
             {
-                if (queryParam.Key != "reportName" && queryParam.Key != "format")
+                Console.WriteLine($"- {queryParam.Key}: {queryParam.Value}");
+            }
+
+            Dictionary<string, object> reportParameters;
+
+            var json = HttpContext.Session.GetString("LastReportParameters");
+
+            if (string.IsNullOrEmpty(json))
+            {
+                // If there is no parameter payload in session, check whether the report actually defines parameters.
+                var rdlDefinedParameters = _rdlDataExtractor.ExtractQueryParameters(reportPath);
+                if (rdlDefinedParameters == null || rdlDefinedParameters.Count == 0)
                 {
-                    reportParameters.Add(queryParam.Key, queryParam.Value.ToString());
+                    // No parameters defined by the report → proceed with an empty parameter set.
+                    reportParameters = new Dictionary<string, object>();
                 }
+                else
+                {
+                    // Parameters exist but were not provided by the user.
+                    return BadRequest("No report parameters found. Preview report first.");
+                }
+            }
+            else
+            {
+                reportParameters = System.Text.Json.JsonSerializer
+                    .Deserialize<Dictionary<string, object>>(json);
+            }
+
+            Console.WriteLine("Report Parameters being passed to LoadReportDataAsync:");
+            foreach (var param in reportParameters)
+            {
+                Console.WriteLine($"- {param.Key}: {param.Value}");
             }
 
             await LoadReportDataAsync(report, reportPath, reportParameters);
@@ -203,12 +250,17 @@ namespace ReportVisualizer.Pages
 
                 foreach (var dataset in datasets)
                 {
+                    var cleanParams = parameters.ToDictionary(
+                        p => p.Key,
+                        p => string.IsNullOrEmpty(p.Value?.ToString()) ? DBNull.Value : (object)p.Value.ToString()
+                    );
+
                     // Execute dataset query
                     DataTable dt = await _sqlDatasetExecutor.ExecuteQueryAsync(
                         connectionString,
                         dataset.CommandText,
                         dataset.CommandType,
-                        parameters
+                        cleanParams
                     );
 
                     // IMPORTANT: dataset name must match RDL dataset name

@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using ReportVisualizer.Security;
 using ReportVisualizer.Utilities;
 using System;
 
 namespace ReportVisualizer.Pages
 {
+    [DevOnly]
     public class IndexModel : PageModel
     {
         public void OnGet()

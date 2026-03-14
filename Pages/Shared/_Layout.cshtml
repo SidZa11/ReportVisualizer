@@ -1,6 +1,14 @@
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    var mode = HttpContextAccessor.HttpContext?.Session.GetString("AppMode");
+    bool isDev = mode == "DEV";
+}
+
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head> 
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Report Visualizer</title>
@@ -14,13 +22,27 @@
             <div class="header-content">
                 <div class="logo">Report Visualizer</div>
                 <nav class="nav">
-                    <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/Index" ? "active" : "")" href="/">Home</a>
-                    <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/DatabaseConfig" ? "active" : "")" href="/DatabaseConfig">Database Config</a>
-                    <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/ReportDesigner" ? "active" : "")" href="/ReportDesigner">Templates</a>
-                    <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/ReportDevelopment" ? "active" : "")" href="/ReportDevelopment">Create Reports</a>
-                    <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/ReportViewer" ? "active" : "")" href="/ReportViewer">View Reports</a>
+                    @if (isDev) 
+                    {
+                        <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/Index" ? "active" : "")" href="/Index">Home</a>
+                        <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/DatabaseConfig" ? "active" : "")" href="/DatabaseConfig">Database Config</a>
+                        <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/ReportDesigner" ? "active" : "")" href="/ReportDesigner">Templates</a>
+                        <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/ReportDevelopment" ? "active" : "")" href="/ReportDevelopment">Create Reports</a>
+                    }
+                    <a class="nav-item @(ViewContext.RouteData.Values["page"]?.ToString() == "/ReportViewer" ? "active" : "")" href="/">View Reports</a>
+                    @if (!isDev)
+                    {
+                        <a class="nav-item" href="#" onclick="openDevLogin()">Dev</a>
+                    }
+                    else 
+                    {
+                        <a class="nav-item" id="logoutBtn" style="display:none;" href="#" onclick="logoutDev()">Logout</a>
+                    }
+                    <a class="nav-item text-danger" href="#" onclick="closeApp()">Close</a>
 
                 </nav>
+                <input type="hidden" id="devLoginUrl" value="@Url.Page("/DevMode", "Login")" />
+                <input type="hidden" id="devLogoutUrl" value="@Url.Page("/DevMode", "Logout")" />
             </div>
         </div>
     </header>
@@ -49,36 +71,154 @@
         </div>
     </div>
 
+    <form id="__AjaxAntiForgeryForm" method="post">
+        @Html.AntiForgeryToken()
+    </form>
+    <div class="modal fade" id="devLoginModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>Developer Mode</h5>
+                </div>
+                <div class="modal-body">
+                    <input type="password" id="devPassword" class="form-control" placeholder="Enter password"/>
+                </div>
+                <div class="modal-footer">
+                    <button id="devLoginBtn" class="btn btn-primary">Enter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="footer">
         <div class="container">
-            <p>&copy; @DateTime.Now.Year - Report Visualizer</p>
+            <p>&copy; @DateTime.Now.Year - Report Visualizer. All rights reserved.</p>
+            @* <p>Contact: <a href="mailto:siddiquizakir11@gmail.com">siddiquizakir11@gmail.com</a></p> *@
         </div>
     </footer>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="~/js/site.js"></script>
     <script>
-        // Show loader on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('globalLoader').style.display = 'none';
+        
+        const loader = document.getElementById('globalLoader');
+
+        // Show loader when navigating away
+        window.addEventListener('beforeunload', function () {
+            if (loader) loader.style.display = 'flex';
         });
 
-        // Show loader on navigation (optional, depending on how navigation is handled)
-        // You might need more sophisticated logic for SPA or AJAX heavy applications
-        window.addEventListener('beforeunload', function() {
-            document.getElementById('globalLoader').style.display = 'flex';
+        // Normal page load
+        window.addEventListener('load', function () {
+            if (loader) loader.style.display = 'none';
         });
 
-        // Example of how to show/hide loader manually:
-        // function showLoader() {
-        //     document.getElementById('globalLoader').style.display = 'flex';
-        // }
+        // BACK/FORWARD cache restore (VERY IMPORTANT)
+        window.addEventListener('pageshow', function (event) {
+            if (loader) loader.style.display = 'none';
+        });
 
-        // function hideLoader() {
-        //     document.getElementById('globalLoader').style.display = 'none';
-        // }
+
+        function openDevLogin(){
+            $('#devLoginModal').modal('show');
+        }
+
+        function submitDevPassword() {
+
+            $('#devLoginModal').modal('hide');
+
+            var pwd = document.getElementById("devPassword").value;
+            var url = document.getElementById("devLoginUrl").value;
+            var token = document.querySelector('#__AjaxAntiForgeryForm input[name="__RequestVerificationToken"]').value;
+
+            var params = new URLSearchParams();
+            params.append("password", pwd);
+            params.append("__RequestVerificationToken", token);
+
+            fetch(url, {
+                method: 'POST',
+                body: params,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                credentials: 'same-origin'
+            })
+            .then(r => r.text())
+            .then(r => {
+                console.log("Server response:", r);
+
+                if (r.trim() === "OK") {
+                    sessionStorage.setItem("mode", "DEV");
+                    location.reload();
+                } else {
+                    alert("Wrong password");
+                }
+            });
+        }
+
+        document.addEventListener("click", function (e) {
+            if (e.target && e.target.id === "devLoginBtn") {
+                submitDevPassword();
+            }
+        });
+
+
+
+        function logoutDev(){
+            var token = document.querySelector('#__AjaxAntiForgeryForm input[name="__RequestVerificationToken"]').value;
+
+            var formData = new FormData();
+            formData.append("__RequestVerificationToken", token);
+
+            fetch('/DevMode?handler=Logout',{
+                method:'POST',
+                body: formData
+            })
+            .then(()=>{
+                sessionStorage.removeItem("mode");
+                location.reload();
+            });
+        }
+
+
+        document.addEventListener("DOMContentLoaded",()=>{
+            if(sessionStorage.getItem("mode")==="DEV")
+                document.getElementById("logoutBtn").style.display="inline-block";
+        });
+
+
+        function closeApp(){
+            if(!confirm("Close the application?")) return;
+            if (loader) loader.style.display = 'flex';
+            fetch('/_app/close', {
+                method: 'POST',
+                credentials: 'same-origin'
+            })
+            .then(() => {
+                setTimeout(() => {
+                    try {
+                        window.location.replace('about:blank');
+                        window.open('', '_self')?.close();
+                        window.close();
+                    } catch {}
+                }, 300);
+            })
+            .catch(() => {
+                setTimeout(() => {
+                    try {
+                        window.location.replace('about:blank');
+                        window.open('', '_self')?.close();
+                        window.close();
+                    } catch {}
+                }, 500);
+            });
+        }
+
     </script>
     @await RenderSectionAsync("Scripts", required: false)
+
 </body>
+</html>
 </html>

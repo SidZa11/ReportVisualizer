@@ -7,10 +7,12 @@ using Microsoft.Reporting.NETCore;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using System.Diagnostics;
+using ReportVisualizer.Security;
 
 namespace ReportVisualizer.Pages
 {
 [ValidateAntiForgeryToken]
+    [DevOnly]
     public class ReportDevelopmentModel : PageModel
     {
         private readonly string _reportTemplatesPath = Path.Combine(Directory.GetCurrentDirectory(), "ReportTemplates", "RDLC");

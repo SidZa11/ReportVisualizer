@@ -83,8 +83,63 @@
                     <h5 class="text-primary">Generated Connection String</h5>
                     <code class="d-block text-break">@Model.GeneratedConnectionString</code>
                 </div>
-
             </div>
         </div>
     </div>
 </div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                Table Configuration
+            </div>
+            <div class="card-body">
+                <p>Configure tables and columns for specific operations.</p>
+                <button type="button" class="btn btn-info" data-toggle="modal" data-target="#tableConfigModal">
+                    Open Table Config
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<!-- Table Config Modal -->
+<div class="modal fade" id="tableConfigModal" tabindex="-1" aria-labelledby="tableConfigModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tableConfigModalLabel">Table Configuration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="tableSelect" class="form-label">Select Table:</label>
+                    <select class="form-select" id="tableSelect">
+                        <option value="">-- Select a Table --</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Select Columns:</label>
+                    <div id="columnCheckboxes" class="border p-3" style="max-height: 200px; overflow-y: auto;">
+                        <!-- Columns will be loaded here dynamically -->
+                        <p>Select a table to load columns.</p>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="runQueryButton">Run Query</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/databaseConfig.js"></script>
+}

@@ -11,173 +11,126 @@
       <am:Name>MSRB</am:Name>
       <am:Version>15.1.30001.02</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2026-02-22T11:51:51.3933514Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2026-02-22T09:25:24.3917809Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
     <DataSource Name="DataSource1">
-      <rd:SecurityType>DataBase</rd:SecurityType>
+      <rd:SecurityType>Integrated</rd:SecurityType>
       <ConnectionProperties>
         <DataProvider>SQL</DataProvider>
-        <ConnectString>Data Source=DESKTOP-C2IL4PB\SQLEXPRESS;Initial Catalog=ReportVisualizerDB</ConnectString>
-        <Prompt>Specify a user name and password for data source DataSource1:</Prompt>
+        <ConnectString>Data Source=DESKTOP-C2IL4PB\SQLEXPRESS;Initial Catalog=Batchdetails</ConnectString>
+        <IntegratedSecurity>true</IntegratedSecurity>
       </ConnectionProperties>
-      <rd:DataSourceID>695c95f0-1f11-4f2c-964b-4bb3eeaacb5a</rd:DataSourceID>
+      <rd:DataSourceID>1e9f129c-9a2e-41ad-bf30-31b5121760f0</rd:DataSourceID>
     </DataSource>
   </DataSources>
   <DataSets>
-    <DataSet Name="DataSet1">
+    <DataSet Name="process_data">
       <Query>
         <DataSourceName>DataSource1</DataSourceName>
         <QueryParameters>
-          <QueryParameter Name="@SourceTable">
-            <Value>=Parameters!SourceTable.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@DateTimeColumn">
-            <Value>=Parameters!DateTimeColumn.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@PivotCategoryColumn">
-            <Value>=Parameters!PivotCategoryColumn.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@NumericValueColumn">
-            <Value>=Parameters!NumericValueColumn.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@PivotAggregateType">
-            <Value>=Parameters!PivotAggregateType.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@ExtraSelectColumns">
-            <Value>=Parameters!ExtraSelectColumns.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@IntervalType">
-            <Value>=Parameters!IntervalType.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@IntervalValue">
-            <Value>=Parameters!IntervalValue.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@StartDateTime">
-            <Value>=Parameters!StartDateTime.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@EndDateTime">
-            <Value>=Parameters!EndDateTime.Value</Value>
-          </QueryParameter>
-          <QueryParameter Name="@AdditionalFilter">
-            <Value>=Parameters!AdditionalFilter.Value</Value>
+          <QueryParameter Name="@LT201">
+            <Value>=Parameters!LT201.Value</Value>
           </QueryParameter>
         </QueryParameters>
         <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
-        <CommandText>EXEC Batchdetails.dbo.usp_GenericTimeSeriesPivot @SourceTable = 'Batchdetails.dbo.ProcessData',
-                                          @DateTimeColumn = 'Time_Stamp',
-                                          @PivotCategoryColumn = 'Time_Stamp',    -- meter column
-										  @NumericValueColumn = 'pHC_101_PV', -- must be numeric
-                                          @PivotAggregateType = 'COUNT',
-                                          @ExtraSelectColumns = ' CAST(Time_Stamp AS DATE) ''Date'' ',
-                                          @IntervalType = 'hour',
-                                          @IntervalValue = 1,
-                                          @StartDateTime = '2020-01-01 00:00:00',
-                                          @EndDateTime = '2026-03-01 23:59:59',
-                                          @AdditionalFilter = '';</CommandText>
+        <CommandText>SELECT
+  ProcessData.Time_Stamp
+  ,ProcessData.Time_Stamp_ms
+  ,ProcessData.RO1_RO2_CONTROL_MODE
+  ,ProcessData.PW_CONTROL_MODE
+  ,ProcessData.PW_PROCESS_MODE__START_STOP
+  ,ProcessData.RO1_RO2_EDI_SANIT_MODE
+  ,ProcessData.pHC_101_PV
+  ,ProcessData.CT_101_PV
+  ,ProcessData.CT_102_PV
+  ,ProcessData.CT_103_PV
+  ,ProcessData.LT_201_PV
+  ,ProcessData.TT_202_PV
+  ,ProcessData.CT_201_PV
+  ,ProcessData.TT_203_PV
+  ,ProcessData.TOC_201_PV
+  ,ProcessData.TT_201_PV
+  ,ProcessData.ORP_101_PV
+  ,ProcessData.RO_Process_Status
+FROM
+  ProcessData
+WHERE LT_201_PV = @LT201;</CommandText>
       </Query>
       <Fields>
-        <Field Name="Date">
+        <Field Name="Time_Stamp">
           <rd:TypeName>System.DateTime</rd:TypeName>
-          <DataField>Date</DataField>
+          <DataField>Time_Stamp</DataField>
         </Field>
-        <Field Name="ID00_00___01_00">
+        <Field Name="Time_Stamp_ms">
           <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>00:00 - 01:00</DataField>
+          <DataField>Time_Stamp_ms</DataField>
         </Field>
-        <Field Name="ID01_00___02_00">
+        <Field Name="RO1_RO2_CONTROL_MODE">
           <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>01:00 - 02:00</DataField>
+          <DataField>RO1_RO2_CONTROL_MODE</DataField>
         </Field>
-        <Field Name="ID02_00___03_00">
+        <Field Name="PW_CONTROL_MODE">
           <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>02:00 - 03:00</DataField>
+          <DataField>PW_CONTROL_MODE</DataField>
         </Field>
-        <Field Name="ID03_00___04_00">
+        <Field Name="PW_PROCESS_MODE__START_STOP">
           <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>03:00 - 04:00</DataField>
+          <DataField>PW_PROCESS_MODE__START_STOP</DataField>
         </Field>
-        <Field Name="ID04_00___05_00">
+        <Field Name="RO1_RO2_EDI_SANIT_MODE">
           <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>04:00 - 05:00</DataField>
+          <DataField>RO1_RO2_EDI_SANIT_MODE</DataField>
         </Field>
-        <Field Name="ID05_00___06_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>05:00 - 06:00</DataField>
+        <Field Name="pHC_101_PV">
+          <rd:TypeName>System.Double</rd:TypeName>
+          <DataField>pHC_101_PV</DataField>
         </Field>
-        <Field Name="ID06_00___07_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>06:00 - 07:00</DataField>
+        <Field Name="CT_101_PV">
+          <rd:TypeName>System.Double</rd:TypeName>
+          <DataField>CT_101_PV</DataField>
         </Field>
-        <Field Name="ID07_00___08_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>07:00 - 08:00</DataField>
+        <Field Name="CT_102_PV">
+          <rd:TypeName>System.Double</rd:TypeName>
+          <DataField>CT_102_PV</DataField>
         </Field>
-        <Field Name="ID08_00___09_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>08:00 - 09:00</DataField>
+        <Field Name="CT_103_PV">
+          <rd:TypeName>System.Double</rd:TypeName>
+          <DataField>CT_103_PV</DataField>
         </Field>
-        <Field Name="ID09_00___10_00">
+        <Field Name="LT_201_PV">
           <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>09:00 - 10:00</DataField>
+          <DataField>LT_201_PV</DataField>
         </Field>
-        <Field Name="ID10_00___11_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>10:00 - 11:00</DataField>
+        <Field Name="TT_202_PV">
+          <rd:TypeName>System.Double</rd:TypeName>
+          <DataField>TT_202_PV</DataField>
         </Field>
-        <Field Name="ID11_00___12_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>11:00 - 12:00</DataField>
+        <Field Name="CT_201_PV">
+          <rd:TypeName>System.Double</rd:TypeName>
+          <DataField>CT_201_PV</DataField>
         </Field>
-        <Field Name="ID12_00___13_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>12:00 - 13:00</DataField>
+        <Field Name="TT_203_PV">
+          <rd:TypeName>System.Double</rd:TypeName>
+          <DataField>TT_203_PV</DataField>
         </Field>
-        <Field Name="ID13_00___14_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>13:00 - 14:00</DataField>
+        <Field Name="TOC_201_PV">
+          <rd:TypeName>System.Double</rd:TypeName>
+          <DataField>TOC_201_PV</DataField>
         </Field>
-        <Field Name="ID14_00___15_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>14:00 - 15:00</DataField>
+        <Field Name="TT_201_PV">
+          <rd:TypeName>System.Double</rd:TypeName>
+          <DataField>TT_201_PV</DataField>
         </Field>
-        <Field Name="ID15_00___16_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>15:00 - 16:00</DataField>
+        <Field Name="ORP_101_PV">
+          <rd:TypeName>System.Double</rd:TypeName>
+          <DataField>ORP_101_PV</DataField>
         </Field>
-        <Field Name="ID16_00___17_00">
+        <Field Name="RO_Process_Status">
           <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>16:00 - 17:00</DataField>
-        </Field>
-        <Field Name="ID17_00___18_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>17:00 - 18:00</DataField>
-        </Field>
-        <Field Name="ID18_00___19_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>18:00 - 19:00</DataField>
-        </Field>
-        <Field Name="ID19_00___20_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>19:00 - 20:00</DataField>
-        </Field>
-        <Field Name="ID20_00___21_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>20:00 - 21:00</DataField>
-        </Field>
-        <Field Name="ID21_00___22_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>21:00 - 22:00</DataField>
-        </Field>
-        <Field Name="ID22_00___23_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>22:00 - 23:00</DataField>
-        </Field>
-        <Field Name="ID23_00___24_00">
-          <rd:TypeName>System.Int32</rd:TypeName>
-          <DataField>23:00 - 24:00</DataField>
+          <DataField>RO_Process_Status</DataField>
         </Field>
       </Fields>
     </DataSet>
@@ -186,6 +139,37 @@
     <ReportSection>
       <Body>
         <ReportItems>
+          <Textbox Name="ReportTitle">
+            <rd:WatermarkTextbox>Title</rd:WatermarkTextbox>
+            <rd:DefaultName>ReportTitle</rd:DefaultName>
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>TEST-1 REPORT</Value>
+                    <Style>
+                      <FontFamily>Segoe UI Light</FontFamily>
+                      <FontSize>28pt</FontSize>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <Height>0.5in</Height>
+            <Width>5.5in</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
           <Tablix Name="Tablix1">
             <TablixBody>
               <TablixColumns>
@@ -200,6 +184,9 @@
                 </TablixColumn>
                 <TablixColumn>
                   <Width>1in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>2in</Width>
                 </TablixColumn>
               </TablixColumns>
               <TablixRows>
@@ -216,7 +203,7 @@
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Date</Value>
+                                  <Value>Time</Value>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
@@ -246,7 +233,7 @@
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>ID00 00 01 00</Value>
+                                  <Value>Ev User</Value>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
@@ -276,7 +263,7 @@
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>ID02 00 03 00</Value>
+                                  <Value>Ev Message</Value>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
@@ -306,7 +293,39 @@
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>ID03 00 04 00</Value>
+                                  <Value>Ev Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox9">
+                          <rd:DefaultName>Textbox9</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Ev Comment</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -335,15 +354,15 @@
                   <TablixCells>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Date">
-                          <rd:DefaultName>Date</rd:DefaultName>
+                        <Textbox Name="Ev_Type">
+                          <rd:DefaultName>Ev_Type</rd:DefaultName>
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!Date.Value</Value>
+                                  <Value>=Fields!Time_Stamp.Value</Value>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
@@ -365,15 +384,15 @@
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID00_00___01_00">
-                          <rd:DefaultName>ID00_00___01_00</rd:DefaultName>
+                        <Textbox Name="Ev_User">
+                          <rd:DefaultName>Ev_User</rd:DefaultName>
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID00_00___01_00.Value</Value>
+                                  <Value>=Fields!CT_101_PV.Value</Value>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
@@ -395,15 +414,15 @@
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID02_00___03_00">
-                          <rd:DefaultName>ID02_00___03_00</rd:DefaultName>
+                        <Textbox Name="Ev_Message">
+                          <rd:DefaultName>Ev_Message</rd:DefaultName>
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID02_00___03_00.Value</Value>
+                                  <Value>=Fields!CT_102_PV.Value</Value>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
@@ -425,15 +444,47 @@
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="ID03_00___04_00">
-                          <rd:DefaultName>ID03_00___04_00</rd:DefaultName>
+                        <Textbox Name="Ev_Value">
+                          <rd:DefaultName>Ev_Value</rd:DefaultName>
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=Fields!ID03_00___04_00.Value</Value>
+                                  <Value>=Fields!LT_201_PV.Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Ev_Comment">
+                          <rd:DefaultName>Ev_Comment</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!TT_203_PV.Value</Value>
                                   <Style>
                                     <FontFamily>Arial</FontFamily>
                                   </Style>
@@ -465,6 +516,7 @@
                 <TablixMember />
                 <TablixMember />
                 <TablixMember />
+                <TablixMember />
               </TablixMembers>
             </TablixColumnHierarchy>
             <TablixRowHierarchy>
@@ -477,10 +529,11 @@
                 </TablixMember>
               </TablixMembers>
             </TablixRowHierarchy>
-            <DataSetName>DataSet1</DataSetName>
-            <Top>0.26333in</Top>
+            <DataSetName>process_data</DataSetName>
+            <Top>0.96333in</Top>
             <Height>0.5in</Height>
-            <Width>4in</Width>
+            <Width>6in</Width>
+            <ZIndex>1</ZIndex>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -495,12 +548,45 @@
           </Border>
         </Style>
       </Body>
-      <Width>6in</Width>
+      <Width>7in</Width>
       <Page>
         <PageFooter>
           <Height>0.45in</Height>
           <PrintOnFirstPage>true</PrintOnFirstPage>
           <PrintOnLastPage>true</PrintOnLastPage>
+          <ReportItems>
+            <Textbox Name="ExecutionTime">
+              <rd:DefaultName>ExecutionTime</rd:DefaultName>
+              <CanGrow>true</CanGrow>
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>=Globals!ExecutionTime</Value>
+                      <Style />
+                    </TextRun>
+                  </TextRuns>
+                  <Style>
+                    <TextAlign>Right</TextAlign>
+                  </Style>
+                </Paragraph>
+              </Paragraphs>
+              <Top>0.2in</Top>
+              <Left>4in</Left>
+              <Height>0.25in</Height>
+              <Width>2in</Width>
+              <Style>
+                <Border>
+                  <Style>None</Style>
+                </Border>
+                <PaddingLeft>2pt</PaddingLeft>
+                <PaddingRight>2pt</PaddingRight>
+                <PaddingTop>2pt</PaddingTop>
+                <PaddingBottom>2pt</PaddingBottom>
+              </Style>
+            </Textbox>
+          </ReportItems>
           <Style>
             <Border>
               <Style>None</Style>
@@ -516,115 +602,20 @@
     </ReportSection>
   </ReportSections>
   <ReportParameters>
-    <ReportParameter Name="SourceTable">
+    <ReportParameter Name="LT201">
       <DataType>String</DataType>
-      <DefaultValue>
-        <Values>
-          <Value>Batchdetails.dbo.ProcessData</Value>
-        </Values>
-      </DefaultValue>
-      <Prompt>Source Table</Prompt>
-    </ReportParameter>
-    <ReportParameter Name="DateTimeColumn">
-      <DataType>String</DataType>
-      <Prompt>Date Time Column</Prompt>
-    </ReportParameter>
-    <ReportParameter Name="PivotCategoryColumn">
-      <DataType>String</DataType>
-      <Prompt>Pivot Category Column</Prompt>
-    </ReportParameter>
-    <ReportParameter Name="NumericValueColumn">
-      <DataType>String</DataType>
-      <Prompt>Numeric Value Column</Prompt>
-    </ReportParameter>
-    <ReportParameter Name="PivotAggregateType">
-      <DataType>String</DataType>
-      <Prompt>Pivot Aggregate Type</Prompt>
-    </ReportParameter>
-    <ReportParameter Name="ExtraSelectColumns">
-      <DataType>String</DataType>
-      <Prompt>Extra Select Columns</Prompt>
-    </ReportParameter>
-    <ReportParameter Name="IntervalType">
-      <DataType>String</DataType>
-      <Prompt>Interval Type</Prompt>
-    </ReportParameter>
-    <ReportParameter Name="IntervalValue">
-      <DataType>String</DataType>
-      <Prompt>Interval Value</Prompt>
-    </ReportParameter>
-    <ReportParameter Name="StartDateTime">
-      <DataType>String</DataType>
-      <Prompt>Start Date Time</Prompt>
-    </ReportParameter>
-    <ReportParameter Name="EndDateTime">
-      <DataType>String</DataType>
-      <Prompt>End Date Time</Prompt>
-    </ReportParameter>
-    <ReportParameter Name="AdditionalFilter">
-      <DataType>String</DataType>
-      <Prompt>Additional Filter</Prompt>
+      <Prompt>LT201</Prompt>
     </ReportParameter>
   </ReportParameters>
   <ReportParametersLayout>
     <GridLayoutDefinition>
       <NumberOfColumns>4</NumberOfColumns>
-      <NumberOfRows>3</NumberOfRows>
+      <NumberOfRows>2</NumberOfRows>
       <CellDefinitions>
         <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>0</RowIndex>
-          <ParameterName>SourceTable</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
           <ColumnIndex>1</ColumnIndex>
           <RowIndex>0</RowIndex>
-          <ParameterName>DateTimeColumn</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>2</ColumnIndex>
-          <RowIndex>0</RowIndex>
-          <ParameterName>PivotCategoryColumn</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>3</ColumnIndex>
-          <RowIndex>0</RowIndex>
-          <ParameterName>NumericValueColumn</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>1</RowIndex>
-          <ParameterName>PivotAggregateType</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>1</ColumnIndex>
-          <RowIndex>1</RowIndex>
-          <ParameterName>ExtraSelectColumns</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>2</ColumnIndex>
-          <RowIndex>1</RowIndex>
-          <ParameterName>IntervalType</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>3</ColumnIndex>
-          <RowIndex>1</RowIndex>
-          <ParameterName>IntervalValue</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>2</RowIndex>
-          <ParameterName>StartDateTime</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>1</ColumnIndex>
-          <RowIndex>2</RowIndex>
-          <ParameterName>EndDateTime</ParameterName>
-        </CellDefinition>
-        <CellDefinition>
-          <ColumnIndex>2</ColumnIndex>
-          <RowIndex>2</RowIndex>
-          <ParameterName>AdditionalFilter</ParameterName>
+          <ParameterName>LT201</ParameterName>
         </CellDefinition>
       </CellDefinitions>
     </GridLayoutDefinition>

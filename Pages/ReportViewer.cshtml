@@ -29,7 +29,7 @@
 
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary">View</button>
-                                <button type="button" class="btn btn-warning" onclick="editReport()">Edit</button>
+                                <button type="button" class="btn btn-warning" onclick="editReport()" id="editReportButton">Edit</button>
                             </div>
                         </form>
                     }
@@ -130,6 +130,11 @@
                     keyboard: false // Prevent closing by pressing escape key
                 });
                 $('#parameterInputPopup').modal('show');
+            }
+
+            // Hide Edit button if not in Dev Mode
+            if (sessionStorage.getItem("mode") !== "DEV") {
+                $("#editReportButton").hide();
             }
         });
     </script>

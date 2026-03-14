@@ -5,6 +5,7 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <NoWarn>NU1701</NoWarn>
+    <OutputType>WinExe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +14,8 @@
     <PackageReference Include="ReportViewerCore.NETCore" Version="15.1.26" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.5" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="9.0.0-preview.1.24081.5" />
+    <PackageReference Include="System.Management" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -24,6 +27,7 @@
     <Folder Include="ReportViewer\" />
     <Folder Include="Utilities\" />
     <Folder Include="App_Start\" />
+    <Folder Include="Security\" />
   </ItemGroup>
 
 </Project>
