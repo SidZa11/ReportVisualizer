@@ -1,9 +1,15 @@
 @using Microsoft.AspNetCore.Http
 @inject IHttpContextAccessor HttpContextAccessor
+@inject ReportVisualizer.Security.ScadaLoginService ScadaLoginSvc
 
 @{
-    var mode = HttpContextAccessor.HttpContext?.Session.GetString("AppMode");
+    var ctx = HttpContextAccessor.HttpContext;
+    var mode = ctx?.Session.GetString("AppMode");
     bool isDev = mode == "DEV";
+    bool showScadaLogin = ScadaLoginSvc.Options.Enable;
+    bool scadaLoggedIn = showScadaLogin && ScadaLoginSvc.IsLoggedIn(ctx);
+    string scadaDisplayName = scadaLoggedIn ? (ScadaLoginSvc.GetCurrentFullName(ctx) ?? ScadaLoginSvc.GetCurrentUser(ctx) ?? "User") : "";
+    string scadaAvatarLetter = string.IsNullOrWhiteSpace(scadaDisplayName) ? "" : scadaDisplayName.TrimStart().Substring(0, 1).ToUpperInvariant();
 }
 
 <!DOCTYPE html>
@@ -14,7 +20,84 @@
     <title>@ViewData["Title"] - Report Visualizer</title>
     <link rel="stylesheet" href="~/css/site.css" />
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        .user-menu-wrapper {
+            position: relative;
+            margin-left: 0.75rem;
+        }
+        .user-avatar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 0 6px 14px rgba(30, 60, 114, 0.35);
+            border: 1px solid rgba(255,255,255,0.15);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .user-avatar:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(30, 60, 114, 0.45);
+        }
+        .user-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            min-width: 190px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            padding: 6px;
+            z-index: 1060;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-4px);
+            transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease;
+        }
+        .user-dropdown.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .user-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.55rem 0.75rem;
+            border-radius: 8px;
+            color: #0f172a;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 0.92rem;
+        }
+        .user-dropdown-item:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            text-decoration: none;
+        }
+        .user-dropdown-item.danger {
+            color: #b91c1c;
+        }
+        .user-dropdown-item.danger:hover {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+        .nav-right-align {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+        }
+    </style>
+
 </head>
 <body>
     <header class="header">
@@ -38,8 +121,43 @@
                     {
                         <a class="nav-item" id="logoutBtn" style="display:none;" href="#" onclick="logoutDev()">Logout</a>
                     }
-                    <a class="nav-item text-danger" href="#" onclick="closeApp()">Close</a>
-
+                    @if (showScadaLogin)
+                    {
+                        if (scadaLoggedIn)
+                        {
+                            <span class="nav-right-align"></span>
+                            <form class="d-none" method="post" action="/Login?handler=Logout" id="__scadaLogoutForm">
+                                @Html.AntiForgeryToken()
+                            </form>
+                            <div class="user-menu-wrapper" id="__userMenuWrapper">
+                                <div class="user-avatar"
+                                     id="__userAvatarBtn"
+                                     title="@scadaDisplayName"
+                                     data-username="@scadaDisplayName"
+                                     onclick="toggleUserMenu(event)">@scadaAvatarLetter</div>
+                                <div class="user-dropdown" id="__userDropdown">
+                                    <div class="user-dropdown-item danger" onclick="closeApp(event)">
+                                        <span>⏻</span>
+                                        <span>Close</span>
+                                    </div>
+                                    <div class="user-dropdown-item" onclick="signOutScada(event)">
+                                        <span>⎋</span>
+                                        <span>Sign Out</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="nav-right-align"></span>
+                            <a class="nav-item text-success" href="/Login">Sign in</a>
+                        }
+                    }
+                    else
+                    {
+                        <span class="nav-right-align"></span>
+                        <a class="nav-item text-danger" href="#" onclick="closeApp(event)">Close</a>
+                    }
                 </nav>
                 <input type="hidden" id="devLoginUrl" value="@Url.Page("/DevMode", "Login")" />
                 <input type="hidden" id="devLogoutUrl" value="@Url.Page("/DevMode", "Logout")" />
@@ -184,41 +302,100 @@
 
 
         document.addEventListener("DOMContentLoaded",()=>{
-            if(sessionStorage.getItem("mode")==="DEV")
-                document.getElementById("logoutBtn").style.display="inline-block";
+            if(sessionStorage.getItem("mode")==="DEV") {
+                var logoutBtn = document.getElementById("logoutBtn");
+                if (logoutBtn) logoutBtn.style.display="inline-block";
+            }
+            document.addEventListener("click", function (e) {
+                var wrapper = document.getElementById("__userMenuWrapper");
+                var dropdown = document.getElementById("__userDropdown");
+                if (!wrapper || !dropdown) return;
+                if (!wrapper.contains(e.target)) {
+                    dropdown.classList.remove("open");
+                }
+            });
         });
 
+        function toggleUserMenu(e) {
+            if (e && e.stopPropagation) e.stopPropagation();
+            var dropdown = document.getElementById("__userDropdown");
+            if (dropdown) dropdown.classList.toggle("open");
+        }
 
-        function closeApp(){
+        function signOutScada(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            var dropdown = document.getElementById("__userDropdown");
+            if (dropdown) dropdown.classList.remove("open");
+            var form = document.getElementById("__scadaLogoutForm");
+            if (form) {
+                form.submit();
+                return;
+            }
+            window.location.href = "/Login";
+        }
+
+        function closeApp(e){
+            if (e && e.preventDefault) e.preventDefault();
+            var dropdown = document.getElementById("__userDropdown");
+            if (dropdown) dropdown.classList.remove("open");
+
             if(!confirm("Close the application?")) return;
             if (loader) loader.style.display = 'flex';
-            fetch('/_app/close', {
-                method: 'POST',
-                credentials: 'same-origin'
-            })
-            .then(() => {
-                setTimeout(() => {
-                    try {
-                        window.location.replace('about:blank');
-                        window.open('', '_self')?.close();
-                        window.close();
-                    } catch {}
-                }, 300);
-            })
-            .catch(() => {
-                setTimeout(() => {
-                    try {
-                        window.location.replace('about:blank');
-                        window.open('', '_self')?.close();
-                        window.close();
-                    } catch {}
-                }, 500);
-            });
+
+            function tryCloseWindow() {
+                try {
+                    if (!window.__appCloseAttempted) {
+                        window.__appCloseAttempted = 1;
+                    } else {
+                        window.__appCloseAttempted += 1;
+                    }
+                    try { window.open('', '_self').close(); } catch {}
+                    try { window.close(); } catch {}
+                    if (window.__appCloseAttempted < 5) {
+                        setTimeout(tryCloseWindow, 300);
+                    }
+                } catch {}
+            }
+
+            function signOutThenClose() {
+                var hasScadaForm = !!document.getElementById("__scadaLogoutForm");
+                var hasSession = @((scadaLoggedIn ? "true" : "false").ToLowerInvariant());
+                if (!hasSession || !hasScadaForm) {
+                    doCloseRequest();
+                    return;
+                }
+                var token = document.querySelector('#__scadaLogoutForm input[name="__RequestVerificationToken"]')?.value;
+                if (!token) {
+                    doCloseRequest();
+                    return;
+                }
+                var formData = new FormData();
+                formData.append("__RequestVerificationToken", token);
+                fetch('/Login?handler=Logout', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    body: formData
+                }).finally(doCloseRequest);
+            }
+
+            function doCloseRequest() {
+                fetch('/_app/close', {
+                    method: 'POST',
+                    credentials: 'same-origin'
+                })
+                .then(() => {
+                    setTimeout(tryCloseWindow, 150);
+                })
+                .catch(() => {
+                    setTimeout(tryCloseWindow, 250);
+                });
+            }
+
+            signOutThenClose();
         }
 
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 
 </body>
-</html>
 </html>

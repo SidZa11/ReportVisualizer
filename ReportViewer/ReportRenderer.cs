@@ -7,31 +7,52 @@ using ReportVisualizer.ReportViewer.ReportDataExtraction;
 using ReportVisualizer.ReportViewer.ReportDataExecution;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration; // Add this using statement
+using System.Collections.Generic;
+using Microsoft.Extensions.Configuration;
 
 namespace ReportVisualizer.ReportViewer
 {
+    public class RenderedReportResult
+    {
+        public string Html { get; set; }
+        public RenderedReportSnapshot Snapshot { get; set; }
+    }
+
     public class ReportRenderer
     {
         private readonly RdlDataExtractor _rdlDataExtractor;
         private readonly SqlDatasetExecutor _sqlDatasetExecutor;
-        private readonly IConfiguration _configuration; // Declare IConfiguration field
+        private readonly IConfiguration _configuration;
 
         public ReportRenderer(RdlDataExtractor rdlDataExtractor, SqlDatasetExecutor sqlDatasetExecutor, IConfiguration configuration)
         {
             _rdlDataExtractor = rdlDataExtractor;
             _sqlDatasetExecutor = sqlDatasetExecutor;
-            _configuration = configuration; // Initialize IConfiguration field
+            _configuration = configuration;
         }
 
         public async Task<string> RenderReport(string reportPath, Dictionary<string, object> parameters = null)
         {
+            var result = await RenderReportWithSnapshot(reportPath, parameters);
+            return result.Html;
+        }
+
+        public async Task<RenderedReportResult> RenderReportWithSnapshot(string reportPath, Dictionary<string, object> parameters = null)
+        {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            using (var reportFileStream = new FileStream(reportPath, FileMode.Open, FileAccess.Read))
+            var snapshot = new RenderedReportSnapshot
             {
-                var localReport = new LocalReport();
-                localReport.LoadReportDefinition(reportFileStream);
+                ReportName = Path.GetFileNameWithoutExtension(reportPath),
+                Parameters = parameters == null
+                    ? new Dictionary<string, object>()
+                    : new Dictionary<string, object>(parameters)
+            };
+
+            using (var preprocessedStream = RdlPreprocessor.PreprocessFile(reportPath, new RdlPreprocessOptions { ForceRepeatHeaderRowsOnEveryPage = true }))
+            using (var localReport = new LocalReport())
+            {
+                localReport.LoadReportDefinition(preprocessedStream);
                 if (parameters != null && parameters.Any())
                 {
                     var reportParameters = parameters.Select(p =>
@@ -55,44 +76,53 @@ namespace ReportVisualizer.ReportViewer
                 {
                     Console.WriteLine($"Processing DataSet: {dataSet.Name}");
                     var dataSource = dataSourcesInfo.FirstOrDefault(ds => ds.Name == dataSet.DataSourceName);
+                    DataTable dataTable = new DataTable();
                     if (dataSource != null)
                     {
                         Console.WriteLine($"DataSource '{dataSource.Name}' found for DataSet '{dataSet.Name}'.");
                         try
                         {
-                            var dataTable = await _sqlDatasetExecutor.ExecuteQueryAsync(
+                            dataTable = await _sqlDatasetExecutor.ExecuteQueryAsync(
                                 _configuration.GetConnectionString("DefaultConnection"),
                                 dataSet.CommandText,
                                 dataSet.CommandType,
                                 parameters
                             );
-                            localReport.DataSources.Add(new ReportDataSource(dataSet.Name, dataTable));
+                            dataTable.TableName = dataSet.Name;
                         }
                         catch (Exception ex)
                         {
-                            // Log the error and add an empty DataTable to prevent report crash
                             Console.WriteLine($"Error executing dataset '{dataSet.Name}': {ex.Message}");
                             Console.WriteLine($"Stack Trace: {ex.StackTrace}");
-                            localReport.DataSources.Add(new ReportDataSource(dataSet.Name, new DataTable()));
-                            // Optionally, you can add a parameter to the report to indicate an error
-                            localReport.SetParameters(new ReportParameter("DataSetError_" + dataSet.Name, ex.Message));
+                            dataTable = new DataTable(dataSet.Name);
+                            try { localReport.SetParameters(new ReportParameter("DataSetError_" + dataSet.Name, ex.Message)); } catch { }
                         }
                     }
                     else
                     {
                         Console.WriteLine($"DataSource '{dataSet.DataSourceName}' not found for DataSet '{dataSet.Name}'.");
-                        localReport.DataSources.Add(new ReportDataSource(dataSet.Name, new DataTable()));
+                        dataTable = new DataTable(dataSet.Name);
                     }
+
+                    localReport.DataSources.Add(new ReportDataSource(dataSet.Name, dataTable));
+                    snapshot.DataSources.Add(new ReportDataSourceSnapshot
+                    {
+                        Name = dataSet.Name,
+                        Table = DataTableDtoMapper.ToDto(dataTable)
+                    });
                 }
 
                 byte[] html = localReport.Render("HTML5");
-                return Encoding.UTF8.GetString(html);
+                return new RenderedReportResult
+                {
+                    Html = Encoding.UTF8.GetString(html),
+                    Snapshot = snapshot
+                };
             }
         }
 
         public static void ExportReport(string reportPath, string exportFormat)
         {
-            // Logic to export the report
             Console.WriteLine($"Exporting {reportPath} to {exportFormat}");
         }
     }

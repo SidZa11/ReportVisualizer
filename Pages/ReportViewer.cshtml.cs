@@ -18,9 +18,11 @@ using ReportVisualizer.ReportViewer.ReportDataExecution; // Add this using state
 using ReportVisualizer.Utilities; // Add this using statement
 
 using Microsoft.AspNetCore.Http;
+using ReportVisualizer.Security;
 
 namespace ReportVisualizer.Pages
 {
+    [RequireScadaLogin]
     public class ReportViewerModel : PageModel
     {
         private readonly string _reportsPath = Path.Combine(Directory.GetCurrentDirectory(), "ReportViewer", "Reports");
@@ -96,7 +98,13 @@ namespace ReportVisualizer.Pages
 
                 // If no query parameters, proceed to render the report
                 var reportRenderer = new ReportRenderer(_rdlDataExtractor, _sqlDatasetExecutor, _configuration);
-                ReportHtmlContent = await reportRenderer.RenderReport(reportFilePath, new Dictionary<string, object>());
+                var rendered = await reportRenderer.RenderReportWithSnapshot(reportFilePath, new Dictionary<string, object>());
+                ReportHtmlContent = rendered.Html;
+                if (rendered.Snapshot != null)
+                {
+                    rendered.Snapshot.ReportName = reportName;
+                    ReportSnapshotSessionStore.Store(HttpContext.Session, rendered.Snapshot);
+                }
             }
             catch (Exception ex)
             {
@@ -138,7 +146,13 @@ namespace ReportVisualizer.Pages
                     "LastReportParameters",
                     System.Text.Json.JsonSerializer.Serialize(parametersAsObject)
                 );
-                ReportHtmlContent = await reportRenderer.RenderReport(reportFilePath, parametersAsObject);
+                var rendered = await reportRenderer.RenderReportWithSnapshot(reportFilePath, parametersAsObject);
+                ReportHtmlContent = rendered.Html;
+                if (rendered.Snapshot != null)
+                {
+                    rendered.Snapshot.ReportName = reportName;
+                    ReportSnapshotSessionStore.Store(HttpContext.Session, rendered.Snapshot);
+                }
             }
             catch (Exception ex)
             {
@@ -176,50 +190,7 @@ namespace ReportVisualizer.Pages
             if (!System.IO.File.Exists(reportPath))
                 return BadRequest("Report not found");
 
-            LocalReport report = new();
-            report.ReportPath = reportPath;
-
-            Console.WriteLine($"OnGetExport called for report: {reportName}, format: {format}");
-            Console.WriteLine("Request Query Parameters:");
-            foreach (var queryParam in Request.Query)
-            {
-                Console.WriteLine($"- {queryParam.Key}: {queryParam.Value}");
-            }
-
-            Dictionary<string, object> reportParameters;
-
-            var json = HttpContext.Session.GetString("LastReportParameters");
-
-            if (string.IsNullOrEmpty(json))
-            {
-                // If there is no parameter payload in session, check whether the report actually defines parameters.
-                var rdlDefinedParameters = _rdlDataExtractor.ExtractQueryParameters(reportPath);
-                if (rdlDefinedParameters == null || rdlDefinedParameters.Count == 0)
-                {
-                    // No parameters defined by the report → proceed with an empty parameter set.
-                    reportParameters = new Dictionary<string, object>();
-                }
-                else
-                {
-                    // Parameters exist but were not provided by the user.
-                    return BadRequest("No report parameters found. Preview report first.");
-                }
-            }
-            else
-            {
-                reportParameters = System.Text.Json.JsonSerializer
-                    .Deserialize<Dictionary<string, object>>(json);
-            }
-
-            Console.WriteLine("Report Parameters being passed to LoadReportDataAsync:");
-            foreach (var param in reportParameters)
-            {
-                Console.WriteLine($"- {param.Key}: {param.Value}");
-            }
-
-            await LoadReportDataAsync(report, reportPath, reportParameters);
-
-            string renderFormat = format.ToLower() switch
+            string renderFormat = (format ?? string.Empty).ToLower() switch
             {
                 "pdf" => "PDF",
                 "excel" => "EXCELOPENXML",
@@ -227,16 +198,121 @@ namespace ReportVisualizer.Pages
                 _ => "PDF"
             };
 
+            var preprocessOptions = new RdlPreprocessOptions
+            {
+                ForceRepeatHeaderRowsOnEveryPage = true,
+                PromotePageHeaderToBodyForExcel = string.Equals(renderFormat, "EXCELOPENXML", StringComparison.OrdinalIgnoreCase),
+                PromotePageFooterToBodyForExcel = string.Equals(renderFormat, "EXCELOPENXML", StringComparison.OrdinalIgnoreCase)
+            };
+
+            using var definitionStream = RdlPreprocessor.PreprocessFile(reportPath, preprocessOptions);
+            using var report = new LocalReport();
+            report.LoadReportDefinition(definitionStream);
+
+            Console.WriteLine($"OnGetExport called for report: {reportName}, format: {format} -> {renderFormat}");
+
+            var snapshot = ReportSnapshotSessionStore.Get(HttpContext.Session);
+            bool usedCachedSnapshot = snapshot != null &&
+                                      string.Equals(snapshot.ReportName, reportName, StringComparison.OrdinalIgnoreCase) &&
+                                      snapshot.DataSources != null &&
+                                      snapshot.DataSources.Count > 0;
+
+            Dictionary<string, object> reportParameters;
+            if (usedCachedSnapshot)
+            {
+                reportParameters = DataTableDtoMapper.NormalizeParameterDictionary(snapshot.Parameters ?? new Dictionary<string, object>());
+                foreach (var ds in snapshot.DataSources)
+                {
+                    var dt = DataTableDtoMapper.ToDataTable(ds.Table);
+                    if (string.IsNullOrWhiteSpace(dt.TableName)) dt.TableName = ds.Name;
+                    report.DataSources.Add(new ReportDataSource(ds.Name, dt));
+                }
+
+                if (reportParameters.Count > 0)
+                {
+                    var rdlParams = reportParameters.Select(p =>
+                    {
+                        if (p.Value is Microsoft.Extensions.Primitives.StringValues sv)
+                            return new ReportParameter(p.Key, sv.ToArray());
+                        if (p.Value == null)
+                            return new ReportParameter(p.Key, new[] { (string)null });
+                        if (p.Value is IEnumerable<string> en)
+                            return new ReportParameter(p.Key, new List<string>(en).ToArray());
+                        return new ReportParameter(p.Key, Convert.ToString(p.Value));
+                    }).ToList();
+                    try { report.SetParameters(rdlParams); } catch { }
+                }
+            }
+            else
+            {
+                var json = HttpContext.Session.GetString("LastReportParameters");
+
+                if (string.IsNullOrEmpty(json))
+                {
+                    var rdlDefinedParameters = _rdlDataExtractor.ExtractQueryParameters(reportPath);
+                    if (rdlDefinedParameters == null || rdlDefinedParameters.Count == 0)
+                    {
+                        reportParameters = new Dictionary<string, object>();
+                    }
+                    else
+                    {
+                        return BadRequest("No report parameters found. Preview report first.");
+                    }
+                }
+                else
+                {
+                    reportParameters = System.Text.Json.JsonSerializer
+                        .Deserialize<Dictionary<string, object>>(json);
+                }
+
+                Console.WriteLine("Report Parameters being passed to LoadReportDataAsync:");
+                foreach (var param in reportParameters)
+                {
+                    Console.WriteLine($"- {param.Key}: {param.Value}");
+                }
+
+                await LoadReportDataAsync(report, reportPath, reportParameters);
+            }
+
+            string deviceInfo = BuildDeviceInfo(renderFormat);
+
             string mimeType, encoding, extension;
             Warning[] warnings;
             string[] streamids;
 
             var bytes = report.Render(
-                renderFormat, null,
+                renderFormat, deviceInfo,
                 out mimeType, out encoding,
                 out extension, out streamids, out warnings);
 
             return File(bytes, mimeType, $"{reportName}.{extension}");
+        }
+
+        private static string BuildDeviceInfo(string renderFormat)
+        {
+            if (string.Equals(renderFormat, "PDF", StringComparison.OrdinalIgnoreCase))
+            {
+                return "<DeviceInfo>" +
+                       "<HumanReadablePDF>True</HumanReadablePDF>" +
+                       "</DeviceInfo>";
+            }
+            if (string.Equals(renderFormat, "EXCELOPENXML", StringComparison.OrdinalIgnoreCase))
+            {
+                return "<DeviceInfo>" +
+                       "<SimplePageHeaders>False</SimplePageHeaders>" +
+                       "<SimplePageFooters>False</SimplePageFooters>" +
+                       "<OmitDocumentMap>True</OmitDocumentMap>" +
+                       "<RemoveSpaceBeforeContainer>False</RemoveSpaceBeforeContainer>" +
+                       "<RemoveSpaceAfterContainer>False</RemoveSpaceAfterContainer>" +
+                       "</DeviceInfo>";
+            }
+            if (string.Equals(renderFormat, "WORDOPENXML", StringComparison.OrdinalIgnoreCase))
+            {
+                return "<DeviceInfo>" +
+                       "<ExpandToggles>False</ExpandToggles>" +
+                       "</DeviceInfo>";
+            }
+            return null;
         }
 
 

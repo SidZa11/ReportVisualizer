@@ -184,26 +184,182 @@ namespace ReportVisualizer.Pages
         {
             public string TableName { get; set; }
             public List<string> Columns { get; set; }
+            public string DateTimeColumn { get; set; }
+            public string ProcedureName { get; set; }
+        }
+
+        public class ColumnInfo
+        {
+            public string ColumnName { get; set; }
+            public string DataType { get; set; }
+        }
+
+        public JsonResult OnGetColumnDataTypes(string tableName)
+        {
+            var columnInfos = new List<ColumnInfo>();
+            try
+            {
+                var connectionString = _configuration.GetConnectionString("DefaultConnection");
+                using (var conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+                    var schema = conn.GetSchema("Columns", new string[] { null, null, tableName, null });
+                    foreach (System.Data.DataRow row in schema.Rows)
+                    {
+                        columnInfos.Add(new ColumnInfo
+                        {
+                            ColumnName = row["COLUMN_NAME"].ToString(),
+                            DataType = row["DATA_TYPE"].ToString()
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return new JsonResult(new { error = ex.Message });
+            }
+            return new JsonResult(columnInfos);
         }
 
         public JsonResult OnPostExecuteQuery([FromBody] QueryData data)
         {
             try
             {
-                // In a real application, you would construct and execute the query here
-                // using data.TableName and data.Columns.
-                // For now, we'll just return a success message.
-                // Example: SELECT {columns} FROM {tableName}
-                // var connectionString = _configuration.GetConnectionString("DefaultConnection");
-                // using (var conn = new SqlConnection(connectionString))
-                // {
-                //     conn.Open();
-                //     using (var cmd = new SqlCommand(query, conn)) // 'query' would be constructed here
-                //     {
-                //         cmd.ExecuteNonQuery();
-                //     }
-                // }
-                return new JsonResult(new { success = true, message = $"Query execution initiated for table '{data.TableName}' with columns: {string.Join(", ", data.Columns)} (placeholder)." });
+                var connectionString = _configuration.GetConnectionString("DefaultConnection");
+                using (var conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    var selectColumns = string.Join(", ", data.Columns.Select(c => $"[{c}]"));
+
+                    string createProcedureSql = $@"
+                        CREATE OR ALTER PROCEDURE {data.ProcedureName}
+                        (
+                            @StartDateTime  DATETIME = '2026-01-01 00:00:00',
+                            @EndDateTime    DATETIME = '2026-01-31 23:59:59',
+                            @IntervalType   NVARCHAR(10) = 'MINUTE',
+                            @IntervalValue  INT = 2
+                        )
+                        AS
+                        BEGIN
+                            SET NOCOUNT ON;
+
+                            ------------------------------------------------------------
+                            -- Configuration Variables (Edit these for your table)
+                            ------------------------------------------------------------
+                            DECLARE @SourceTable      NVARCHAR(300) = '{data.TableName}';
+                            DECLARE @DateTimeColumn   NVARCHAR(128) = '{data.DateTimeColumn}';
+                            DECLARE @SelectColumns    NVARCHAR(MAX) = '{selectColumns}';
+                            DECLARE @AdditionalFilter NVARCHAR(MAX) = '';
+
+                            ------------------------------------------------------------
+                            -- Validation
+                            ------------------------------------------------------------
+                            IF @IntervalValue <= 0
+                            BEGIN
+                                RAISERROR('IntervalValue must be greater than 0', 16, 1);
+                                RETURN;
+                            END
+
+                            IF @StartDateTime > @EndDateTime
+                            BEGIN
+                                RAISERROR('StartDateTime cannot be greater than EndDateTime', 16, 1);
+                                RETURN;
+                            END
+
+                            ------------------------------------------------------------
+                            -- Calculate Interval in Minutes
+                            ------------------------------------------------------------
+                            DECLARE @IntervalMinutes INT;
+                            IF UPPER(@IntervalType) = 'MINUTE'
+                                SET @IntervalMinutes = @IntervalValue;
+                            ELSE IF UPPER(@IntervalType) = 'HOUR'
+                                SET @IntervalMinutes = @IntervalValue * 60;
+                            ELSE IF UPPER(@IntervalType) = 'DAY'
+                                SET @IntervalMinutes = @IntervalValue * 24 * 60;
+                            ELSE IF UPPER(@IntervalType) = 'WEEK'
+                                SET @IntervalMinutes = @IntervalValue * 7 * 24 * 60;
+                            ELSE
+                            BEGIN
+                                RAISERROR('Invalid IntervalType. Allowed: MINUTE, HOUR, DAY, WEEK', 16, 1);
+                                RETURN;
+                            END
+
+                            ------------------------------------------------------------
+                            -- Generate Time Buckets (Slots) - END Based
+                            ------------------------------------------------------------
+                            DROP TABLE IF EXISTS #TimeBuckets;
+                            CREATE TABLE #TimeBuckets
+                            (
+                                SlotEnd   DATETIME NOT NULL,
+                                SlotStart DATETIME NOT NULL
+                            );
+
+                            CREATE CLUSTERED INDEX IX_TimeBuckets_SlotEnd ON #TimeBuckets (SlotEnd);
+
+                            DECLARE @BucketCount INT;
+                            SET @BucketCount = CEILING(DATEDIFF(MINUTE, @StartDateTime, @EndDateTime) * 1.0 / @IntervalMinutes);
+
+                            ;WITH Tally AS (
+                                SELECT TOP (@BucketCount)
+                                    ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS RN
+                                FROM sys.all_objects A
+                                CROSS JOIN sys.all_objects B
+                            )
+                            INSERT INTO #TimeBuckets (SlotEnd, SlotStart)
+                            SELECT
+                                DATEADD(MINUTE, RN * @IntervalMinutes, @StartDateTime) AS SlotEnd,
+                                DATEADD(MINUTE, (RN - 1) * @IntervalMinutes, @StartDateTime) AS SlotStart
+                            FROM Tally;
+
+                            ------------------------------------------------------------
+                            -- Build Dynamic SQL
+                            -- KEY FIX: Only return data if timestamp MATCHES bucket end time
+                            ------------------------------------------------------------
+                            DECLARE @SQL NVARCHAR(MAX);
+
+                            SET @SQL = N'
+                            SELECT
+                                Sub.SlotEnd AS IntervalStart,
+                                ' + @SelectColumns + N'
+                            FROM (
+                                SELECT
+                                    T.SlotEnd,
+                                    ' + @SelectColumns + N',
+                                    S.' + QUOTENAME(@DateTimeColumn) + N',
+                                    ROW_NUMBER() OVER (
+                                        PARTITION BY T.SlotEnd
+                                        ORDER BY S.' + QUOTENAME(@DateTimeColumn) + N' DESC
+                                    ) AS RN,
+                                    CASE
+                                        WHEN S.' + QUOTENAME(@DateTimeColumn) + N' = T.SlotEnd THEN 1
+                                        ELSE 0
+                                    END AS IsExactMatch
+                                FROM #TimeBuckets T
+                                LEFT JOIN ' + QUOTENAME(@SourceTable) + N' S WITH (NOLOCK)
+                                    ON S.' + QUOTENAME(@DateTimeColumn) + N' > T.SlotStart
+                                    AND S.' + QUOTENAME(@DateTimeColumn) + N' <= T.SlotEnd
+                                    ' + CASE WHEN ISNULL(@AdditionalFilter,'') <> '' THEN N' AND ' + @AdditionalFilter ELSE N'' END + N'
+                            ) Sub
+                            WHERE Sub.RN = 1
+                              AND Sub.IsExactMatch = 1
+                            ORDER BY Sub.SlotEnd;';
+
+                            ------------------------------------------------------------
+                            -- Execute
+                            ------------------------------------------------------------
+                            -- PRINT @SQL;  -- For debugging
+                            EXEC sp_executesql @SQL;
+
+                        END
+                    ";
+
+                    using (var cmd = new SqlCommand(createProcedureSql, conn))
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                return new JsonResult(new { success = true, message = "Stored procedure 'dbo.usp_GenericTimeSeriesInterval' created/altered successfully." });
             }
             catch (Exception ex)
             {

@@ -114,13 +114,19 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="tableConfigModalLabel">Table Configuration</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
                     <label for="tableSelect" class="form-label">Select Table:</label>
                     <select class="form-select" id="tableSelect">
                         <option value="">-- Select a Table --</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="dateTimeColumnSelect" class="form-label">Select Time Column:</label>
+                    <select class="form-select" id="dateTimeColumnSelect">
+                        <option value="">-- Select a Time Column --</option>
                     </select>
                 </div>
                 <div class="mb-3">
@@ -133,7 +139,7 @@
 
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-primary" id="runQueryButton">Run Query</button>
             </div>
         </div>

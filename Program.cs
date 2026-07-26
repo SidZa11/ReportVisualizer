@@ -39,11 +39,16 @@ builder.Services.AddSession(options =>
 
 // Add services to the container
 builder.Services.AddRazorPages();
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.RazorPages.RazorPagesOptions>(options =>
+{
+    options.Conventions.Add(new ReportVisualizer.Infrastructure.ScadaLoginPageConvention());
+});
 
 // Register custom services for dependency injection
 builder.Services.AddScoped<RdlDataExtractor>();
 builder.Services.AddScoped<SqlDatasetExecutor>();
 builder.Services.AddScoped<ReportRenderer>();
+builder.Services.AddScoped<ReportVisualizer.Security.ScadaLoginService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHostedService<LicenseWatchdogService>();
 
@@ -52,6 +57,20 @@ builder.Services.AddHostedService<LicenseWatchdogService>();
 // DatabaseConfigInitializer.ConfigureServices(builder.Services, builder.Configuration);
 
 var app = builder.Build();
+
+// Ensure the login status table exists when ScadaLogin is enabled
+try
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var loginSvc = scope.ServiceProvider.GetService<ReportVisualizer.Security.ScadaLoginService>();
+        loginSvc?.EnsureLoginStatusTable();
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Startup error ensuring report_login_status table: {ex.Message}");
+}
 
 // Configure the HTTP request pipeline
 if (!app.Environment.IsDevelopment())
@@ -78,20 +97,59 @@ app.UseSession();
 
 // Track the browser process we launch so we can close it on shutdown
 System.Diagnostics.Process? __launchedBrowserProcess = null;
+string __isolatedBrowserProfileDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ReportVisualizer_" + Guid.NewGuid().ToString("N"));
+
+static void KillBrowserProcessTree(System.Diagnostics.Process? proc)
+{
+    if (proc == null) return;
+    try
+    {
+        if (proc.HasExited) return;
+    }
+    catch { }
+    try
+    {
+        var psi = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = "taskkill.exe",
+            Arguments = $"/PID {proc.Id} /T /F",
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        using (var killer = System.Diagnostics.Process.Start(psi))
+        {
+            killer?.WaitForExit(3000);
+        }
+    }
+    catch { }
+    try
+    {
+        if (!proc.HasExited)
+        {
+            try { proc.CloseMainWindow(); } catch { }
+            try { proc.WaitForExit(1500); } catch { }
+            if (!proc.HasExited)
+            {
+                try { proc.Kill(true); } catch { }
+            }
+        }
+    }
+    catch { }
+}
 
 var __lifetime = app.Services.GetRequiredService<Microsoft.Extensions.Hosting.IHostApplicationLifetime>();
 __lifetime.ApplicationStopping.Register(() =>
 {
     try
     {
-        if (__launchedBrowserProcess != null && !__launchedBrowserProcess.HasExited)
+        KillBrowserProcessTree(__launchedBrowserProcess);
+    }
+    catch { }
+    try
+    {
+        if (!string.IsNullOrEmpty(__isolatedBrowserProfileDir) && System.IO.Directory.Exists(__isolatedBrowserProfileDir))
         {
-            try { __launchedBrowserProcess.CloseMainWindow(); } catch { }
-            try { __launchedBrowserProcess.WaitForExit(2000); } catch { }
-            if (!__launchedBrowserProcess.HasExited)
-            {
-                try { __launchedBrowserProcess.Kill(true); } catch { }
-            }
+            try { System.IO.Directory.Delete(__isolatedBrowserProfileDir, true); } catch { }
         }
     }
     catch { }
@@ -150,10 +208,11 @@ try
             }
             if (edgeExe != null)
             {
+                try { System.IO.Directory.CreateDirectory(__isolatedBrowserProfileDir); } catch { }
                 var psi = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = edgeExe,
-                    Arguments = $"--kiosk \"{url}\" --edge-kiosk-type=fullscreen",
+                    Arguments = $"--kiosk \"{url}\" --edge-kiosk-type=fullscreen --new-window --user-data-dir=\"{__isolatedBrowserProfileDir}\"",
                     UseShellExecute = false
                 };
                 __launchedBrowserProcess = System.Diagnostics.Process.Start(psi);
@@ -176,10 +235,11 @@ try
             }
             if (chromeExe != null)
             {
+                try { System.IO.Directory.CreateDirectory(__isolatedBrowserProfileDir); } catch { }
                 var psi = new System.Diagnostics.ProcessStartInfo
                 {
                     FileName = chromeExe,
-                    Arguments = $"--kiosk \"{url}\"",
+                    Arguments = $"--kiosk \"{url}\" --new-window --user-data-dir=\"{__isolatedBrowserProfileDir}\"",
                     UseShellExecute = false
                 };
                 __launchedBrowserProcess = System.Diagnostics.Process.Start(psi);

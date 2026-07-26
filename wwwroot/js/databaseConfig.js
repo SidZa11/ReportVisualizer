@@ -3,6 +3,7 @@ $(document).ready(function () {
     var tableSelect = $('#tableSelect');
     var columnCheckboxes = $('#columnCheckboxes');
     var runQueryButton = $('#runQueryButton');
+    var dateTimeColumnSelect = $('#dateTimeColumnSelect');
 
     // Function to load tables
     function loadTables() {
@@ -30,22 +31,30 @@ $(document).ready(function () {
     // Function to load columns for a selected table
     function loadColumns(tableName) {
         columnCheckboxes.empty();
+        dateTimeColumnSelect.empty();
+        dateTimeColumnSelect.append('<option value="">-- Select a Time Column --</option>');
+
         if (tableName) {
             $.ajax({
-                url: '?handler=Columns&tableName=' + tableName,
+                url: '?handler=ColumnDataTypes&tableName=' + tableName,
                 type: 'GET',
                 success: function (data) {
                     if (data && data.length > 0) {
                         $.each(data, function (i, column) {
+                            // Populate general column checkboxes
                             columnCheckboxes.append(
                                 '<div class="form-check">' +
-                                '<input class="form-check-input" type="checkbox" value="' + column + '" id="column-' + column + '">' +
-                                '<label class="form-check-label" for="column-' + column + '">' + column + '</label>' +
+                                '<input class="form-check-input" type="checkbox" value="' + column.columnName + '" id="column-' + column.columnName + '">' +
+                                '<label class="form-check-label" for="column-' + column.columnName + '">' + column.columnName + ' (' + column.dataType + ')</label>' +
                                 '</div>'
                             );
+
+                            // Populate time column dropdown with all columns
+                            dateTimeColumnSelect.append('<option value="' + column.columnName + '">' + column.columnName + ' (' + column.dataType + ')</option>');
                         });
                     } else {
                         columnCheckboxes.append('<p>No columns found for this table.</p>');
+                        dateTimeColumnSelect.append('<option value="">No time columns found</option>');
                     }
                 },
                 error: function (xhr, status, error) {
@@ -55,6 +64,7 @@ $(document).ready(function () {
             });
         } else {
             columnCheckboxes.append('<p>Select a table to load columns.</p>');
+            dateTimeColumnSelect.append('<option value="">Select a table to load time columns.</option>');
         }
     }
 
@@ -63,6 +73,8 @@ $(document).ready(function () {
         loadTables();
         columnCheckboxes.empty();
         columnCheckboxes.append('<p>Select a table to load columns.</p>');
+        dateTimeColumnSelect.empty();
+        dateTimeColumnSelect.append('<option value="">-- Select a Time Column --</option>');
     });
 
     // Event listener for table selection change
@@ -78,6 +90,7 @@ $(document).ready(function () {
         columnCheckboxes.find('input[type="checkbox"]:checked').each(function () {
             selectedColumns.push($(this).val());
         });
+        var selectedDateTimeColumn = dateTimeColumnSelect.val();
 
         if (!selectedTable) {
             alert("Please select a table.");
@@ -85,10 +98,26 @@ $(document).ready(function () {
         }
 
         if (selectedColumns.length === 0) {
-            alert("Please select at least one column.");
+            alert("Please select at least one column for the query.");
             return;
         }
 
+        if (!selectedDateTimeColumn) {
+            alert("Please select a Time Column.");
+            return;
+        }
+
+        var procedureName = prompt("Please enter the name for the stored procedure:", "usp_GenericTimeSeriesInterval");
+        if (!procedureName) {
+            alert("Stored procedure name cannot be empty.");
+            return;
+        }
+
+        // Send data to backend
+        sendExecuteQueryRequest(selectedTable, selectedColumns, selectedDateTimeColumn, procedureName);
+    });
+
+    function sendExecuteQueryRequest(selectedTable, selectedColumns, selectedDateTimeColumn, procedureName) {
         // Send data to backend
         $.ajax({
             url: '?handler=ExecuteQuery',
@@ -99,7 +128,9 @@ $(document).ready(function () {
             contentType: 'application/json',
             data: JSON.stringify({
                 tableName: selectedTable,
-                columns: selectedColumns
+                columns: selectedColumns,
+                dateTimeColumn: selectedDateTimeColumn,
+                procedureName: procedureName
             }),
             success: function (response) {
                 if (response.success) {
@@ -114,5 +145,5 @@ $(document).ready(function () {
                 alert("Error executing query: " + xhr.responseText);
             }
         });
-    });
+    }
 });
