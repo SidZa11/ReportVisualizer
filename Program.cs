@@ -165,8 +165,22 @@ app.MapPost("/_app/close", (Microsoft.AspNetCore.Http.HttpContext ctx, Microsoft
 
     _ = System.Threading.Tasks.Task.Run(() =>
     {
-        System.Threading.Thread.Sleep(200);
-        lifetime.StopApplication();
+        try
+        {
+            KillBrowserProcessTree(__launchedBrowserProcess);
+        }
+        catch { }
+        System.Threading.Thread.Sleep(300);
+        try
+        {
+            KillBrowserProcessTree(__launchedBrowserProcess);
+        }
+        catch { }
+        try
+        {
+            lifetime.StopApplication();
+        }
+        catch { }
     });
 
     return Results.Ok(new { success = true });

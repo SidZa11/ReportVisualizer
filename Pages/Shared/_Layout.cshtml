@@ -379,16 +379,23 @@
             }
 
             function doCloseRequest() {
-                fetch('/_app/close', {
-                    method: 'POST',
-                    credentials: 'same-origin'
-                })
-                .then(() => {
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/_app/close', true);
+                xhr.withCredentials = true;
+                xhr.onload = function () {
+                    setTimeout(tryCloseWindow, 50);
+                    setTimeout(tryCloseWindow, 200);
+                    setTimeout(tryCloseWindow, 500);
+                    setTimeout(tryCloseWindow, 900);
+                };
+                xhr.onerror = function () {
                     setTimeout(tryCloseWindow, 150);
-                })
-                .catch(() => {
-                    setTimeout(tryCloseWindow, 250);
-                });
+                    setTimeout(tryCloseWindow, 400);
+                    setTimeout(tryCloseWindow, 800);
+                };
+                try { xhr.send(); } catch (e) {
+                    setTimeout(tryCloseWindow, 100);
+                }
             }
 
             signOutThenClose();

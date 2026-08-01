@@ -49,10 +49,10 @@ namespace ReportVisualizer.ReportViewer
                     : new Dictionary<string, object>(parameters)
             };
 
-            using (var preprocessedStream = RdlPreprocessor.PreprocessFile(reportPath, new RdlPreprocessOptions { ForceRepeatHeaderRowsOnEveryPage = true }))
-            using (var localReport = new LocalReport())
+            using (var reportFileStream = new FileStream(reportPath, FileMode.Open, FileAccess.Read))
             {
-                localReport.LoadReportDefinition(preprocessedStream);
+                var localReport = new LocalReport();
+                localReport.LoadReportDefinition(reportFileStream);
                 if (parameters != null && parameters.Any())
                 {
                     var reportParameters = parameters.Select(p =>

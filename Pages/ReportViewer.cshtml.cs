@@ -36,6 +36,9 @@ namespace ReportVisualizer.Pages
         public List<string> AvailableReports { get; set; }
         public List<QueryParameterInfo> QueryParameters { get; set; }
         public bool ShowParameterPopup { get; set; } = false;
+        public bool ShowExcelExport { get; set; } = true;
+        public bool ShowPdfExport { get; set; } = true;
+        public bool ShowPrint { get; set; } = true;
         [BindProperty]
         public Dictionary<string, object> SubmittedParameters { get; set; }
 
@@ -48,6 +51,10 @@ namespace ReportVisualizer.Pages
 
         public async Task<IActionResult> OnGet(string reportName)
         {
+            ShowExcelExport = string.Equals(_configuration["ReportDownload:excel:enable"], "true", StringComparison.OrdinalIgnoreCase);
+            ShowPdfExport = string.Equals(_configuration["ReportDownload:pdf:enable"], "true", StringComparison.OrdinalIgnoreCase);
+            ShowPrint = string.Equals(_configuration["ReportDownload:print:enable"], "true", StringComparison.OrdinalIgnoreCase);
+
             var reportsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "ReportViewer", "Reports");
             // Ensure directory exists
             if (!Directory.Exists(reportsDirectory))
@@ -118,6 +125,10 @@ namespace ReportVisualizer.Pages
 
         public async Task<IActionResult> OnPostSubmitParameters(string reportName, IFormCollection form)
         {
+            ShowExcelExport = string.Equals(_configuration["ReportDownload:excel:enable"], "true", StringComparison.OrdinalIgnoreCase);
+            ShowPdfExport = string.Equals(_configuration["ReportDownload:pdf:enable"], "true", StringComparison.OrdinalIgnoreCase);
+            ShowPrint = string.Equals(_configuration["ReportDownload:print:enable"], "true", StringComparison.OrdinalIgnoreCase);
+
             var reportsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "ReportViewer", "Reports");
             AvailableReports = Directory.GetFiles(reportsDirectory, "*.rdl")
                                         .Select(Path.GetFileNameWithoutExtension)
@@ -185,12 +196,22 @@ namespace ReportVisualizer.Pages
             if (string.IsNullOrEmpty(reportName))
                 return BadRequest("Report not selected");
 
+            bool allowExcel = string.Equals(_configuration["ReportDownload:excel:enable"], "true", StringComparison.OrdinalIgnoreCase);
+            bool allowPdf = string.Equals(_configuration["ReportDownload:pdf:enable"], "true", StringComparison.OrdinalIgnoreCase);
+            if ((string.Equals(format, "excel", StringComparison.OrdinalIgnoreCase) && !allowExcel) ||
+                (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase) && !allowPdf))
+            {
+                return Forbid();
+            }
+
             var reportPath = Path.Combine(_reportsPath, reportName + ".rdl");
 
             if (!System.IO.File.Exists(reportPath))
                 return BadRequest("Report not found");
 
-            string renderFormat = (format ?? string.Empty).ToLower() switch
+            LocalReport report = new();
+
+            string renderFormat = format.ToLower() switch
             {
                 "pdf" => "PDF",
                 "excel" => "EXCELOPENXML",
@@ -198,18 +219,34 @@ namespace ReportVisualizer.Pages
                 _ => "PDF"
             };
 
-            var preprocessOptions = new RdlPreprocessOptions
+            bool isExcel = string.Equals(renderFormat, "EXCELOPENXML", StringComparison.OrdinalIgnoreCase);
+
+            if (isExcel)
             {
-                ForceRepeatHeaderRowsOnEveryPage = true,
-                PromotePageHeaderToBodyForExcel = string.Equals(renderFormat, "EXCELOPENXML", StringComparison.OrdinalIgnoreCase),
-                PromotePageFooterToBodyForExcel = string.Equals(renderFormat, "EXCELOPENXML", StringComparison.OrdinalIgnoreCase)
-            };
+                // In Excel, PageFooter is not rendered as worksheet rows (only in print layout/setup).
+                // To guarantee the footer is visible as rows in the sheet, we move PageFooter ReportItems
+                // to the bottom of Body and drop the PageFooter element for this render pass.
+                try
+                {
+                    using var fs = new FileStream(reportPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    using var reader = new StreamReader(fs);
+                    var rdl = reader.ReadToEnd();
+                    var transformed = TransformRdlMovePageFooterToBodyForExcel(rdl);
+                    using var ms = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(transformed));
+                    report.LoadReportDefinition(ms);
+                }
+                catch
+                {
+                    // Fall back to the raw RDL if transform fails.
+                    report.ReportPath = reportPath;
+                }
+            }
+            else
+            {
+                report.ReportPath = reportPath;
+            }
 
-            using var definitionStream = RdlPreprocessor.PreprocessFile(reportPath, preprocessOptions);
-            using var report = new LocalReport();
-            report.LoadReportDefinition(definitionStream);
-
-            Console.WriteLine($"OnGetExport called for report: {reportName}, format: {format} -> {renderFormat}");
+            Console.WriteLine($"OnGetExport called for report: {reportName}, format: {format}");
 
             var snapshot = ReportSnapshotSessionStore.Get(HttpContext.Session);
             bool usedCachedSnapshot = snapshot != null &&
@@ -288,33 +325,6 @@ namespace ReportVisualizer.Pages
             return File(bytes, mimeType, $"{reportName}.{extension}");
         }
 
-        private static string BuildDeviceInfo(string renderFormat)
-        {
-            if (string.Equals(renderFormat, "PDF", StringComparison.OrdinalIgnoreCase))
-            {
-                return "<DeviceInfo>" +
-                       "<HumanReadablePDF>True</HumanReadablePDF>" +
-                       "</DeviceInfo>";
-            }
-            if (string.Equals(renderFormat, "EXCELOPENXML", StringComparison.OrdinalIgnoreCase))
-            {
-                return "<DeviceInfo>" +
-                       "<SimplePageHeaders>False</SimplePageHeaders>" +
-                       "<SimplePageFooters>False</SimplePageFooters>" +
-                       "<OmitDocumentMap>True</OmitDocumentMap>" +
-                       "<RemoveSpaceBeforeContainer>False</RemoveSpaceBeforeContainer>" +
-                       "<RemoveSpaceAfterContainer>False</RemoveSpaceAfterContainer>" +
-                       "</DeviceInfo>";
-            }
-            if (string.Equals(renderFormat, "WORDOPENXML", StringComparison.OrdinalIgnoreCase))
-            {
-                return "<DeviceInfo>" +
-                       "<ExpandToggles>False</ExpandToggles>" +
-                       "</DeviceInfo>";
-            }
-            return null;
-        }
-
 
         private async Task LoadReportDataAsync(LocalReport report, string reportPath, Dictionary<string, object> parameters)
         {
@@ -348,6 +358,186 @@ namespace ReportVisualizer.Pages
                 ErrorHandler.HandleError(ex, $"Error loading report data for report path: {reportPath}");
                 throw; // Re-throw the exception after logging
             }
+        }
+
+        private static string BuildDeviceInfo(string renderFormat)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append("<DeviceInfo>");
+            if (string.Equals(renderFormat, "PDF", StringComparison.OrdinalIgnoreCase))
+            {
+                sb.Append("<HumanReadablePDF>True</HumanReadablePDF>");
+                sb.Append("<EmbedFonts>None</EmbedFonts>");
+            }
+            else if (string.Equals(renderFormat, "EXCELOPENXML", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(renderFormat, "EXCEL", StringComparison.OrdinalIgnoreCase))
+            {
+                sb.Append("<OmitDocumentMap>True</OmitDocumentMap>");
+                sb.Append("<RemoveSpaceBeforeFootnote>True</RemoveSpaceBeforeFootnote>");
+                sb.Append("<SimplePageHeaders>False</SimplePageHeaders>");
+                sb.Append("<PrintOnFirstPage>True</PrintOnFirstPage>");
+                sb.Append("<PrintOnLastPage>True</PrintOnLastPage>");
+                sb.Append("<InsertPageBreaks>True</InsertPageBreaks>");
+            }
+            else if (string.Equals(renderFormat, "WORDOPENXML", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(renderFormat, "WORD", StringComparison.OrdinalIgnoreCase))
+            {
+                sb.Append("<OmitDocumentMap>True</OmitDocumentMap>");
+                sb.Append("<ExpandToggles>True</ExpandToggles>");
+            }
+            sb.Append("</DeviceInfo>");
+            return sb.ToString();
+        }
+
+        private static string TransformRdlMovePageFooterToBodyForExcel(string rdl)
+        {
+            if (string.IsNullOrWhiteSpace(rdl)) return rdl;
+            var xdoc = System.Xml.Linq.XDocument.Parse(rdl);
+            var ns = xdoc.Root?.Name.Namespace ?? System.Xml.Linq.XNamespace.None;
+            var page = xdoc.Root?.Element(ns + "Page");
+            if (page == null) return rdl;
+            var pageFooter = page.Element(ns + "PageFooter");
+            if (pageFooter == null) return rdl;
+            var footerItems = pageFooter.Element(ns + "ReportItems");
+            if (footerItems == null || !footerItems.HasElements)
+            {
+                pageFooter.Remove();
+                return xdoc.ToString();
+            }
+            var body = xdoc.Root?.Element(ns + "Body");
+            if (body == null) return rdl;
+
+            var bodyItems = body.Element(ns + "ReportItems");
+            if (bodyItems == null)
+            {
+                bodyItems = new System.Xml.Linq.XElement(ns + "ReportItems");
+                body.AddFirst(bodyItems);
+            }
+
+            static double InchesStringToDouble(string s)
+            {
+                if (string.IsNullOrWhiteSpace(s)) return 0.0;
+                s = s.Trim();
+                if (s.EndsWith("in", StringComparison.OrdinalIgnoreCase)) s = s.Substring(0, s.Length - 2);
+                else if (s.EndsWith("cm", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (double.TryParse(s.Substring(0, s.Length - 2), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var cm))
+                        return cm / 2.54;
+                    return 0;
+                }
+                else if (s.EndsWith("mm", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (double.TryParse(s.Substring(0, s.Length - 2), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var mm))
+                        return mm / 25.4;
+                    return 0;
+                }
+                else if (s.EndsWith("pt", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (double.TryParse(s.Substring(0, s.Length - 2), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var pt))
+                        return pt / 72.0;
+                    return 0;
+                }
+                if (double.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d)) return d;
+                return 0;
+            }
+            static string DoubleToInchesString(double v) => v.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture) + "in";
+
+            double maxBodyBottom = 0;
+            foreach (var el in bodyItems.Elements())
+            {
+                double top = InchesStringToDouble((string)el.Element(ns + "Top"));
+                double height = InchesStringToDouble((string)el.Element(ns + "Height"));
+                double bottom = top + height;
+                if (bottom > maxBodyBottom) maxBodyBottom = bottom;
+            }
+
+            double topOffset = maxBodyBottom + 0.1;
+            double footerBottom = topOffset;
+            double maxFooterWidth = 0;
+
+            // Wrap the moved footer content in a separator rectangle (subtle dashed line) so it reads as a footer in Excel
+            string footerWidthStr = (string)pageFooter.Element(ns + "Height");
+            double footerHeight = InchesStringToDouble(footerWidthStr);
+
+            var separatorTop = topOffset;
+            var separatorHeight = 0.03;
+            var separator = new System.Xml.Linq.XElement(ns + "Rectangle",
+                new System.Xml.Linq.XAttribute("Name", "__ExcelFooterSeparator_" + Guid.NewGuid().ToString("N").Substring(0, 8)),
+                new System.Xml.Linq.XElement(ns + "Top", DoubleToInchesString(separatorTop)),
+                new System.Xml.Linq.XElement(ns + "Left", "0in"),
+                new System.Xml.Linq.XElement(ns + "Height", DoubleToInchesString(separatorHeight)),
+                new System.Xml.Linq.XElement(ns + "Width", DoubleToInchesString(7.0)),
+                new System.Xml.Linq.XElement(ns + "Style",
+                    new System.Xml.Linq.XElement(ns + "Border",
+                        new System.Xml.Linq.XElement(ns + "Style", "Solid"),
+                        new System.Xml.Linq.XElement(ns + "Color", "SlateGray")
+                    ),
+                    new System.Xml.Linq.XElement(ns + "TopBorder",
+                        new System.Xml.Linq.XElement(ns + "Style", "Dashed"),
+                        new System.Xml.Linq.XElement(ns + "Color", "SlateGray"),
+                        new System.Xml.Linq.XElement(ns + "Width", "0.5pt")
+                    )
+                )
+            );
+            bodyItems.Add(separator);
+            topOffset += separatorHeight + 0.05;
+
+            foreach (var item in footerItems.Elements().ToList())
+            {
+                double oldTop = InchesStringToDouble((string)item.Element(ns + "Top"));
+                double oldHeight = InchesStringToDouble((string)item.Element(ns + "Height"));
+                double oldLeft = InchesStringToDouble((string)item.Element(ns + "Left"));
+                double oldWidth = InchesStringToDouble((string)item.Element(ns + "Width"));
+
+                double newTop = topOffset + oldTop;
+                var topEl = item.Element(ns + "Top");
+                if (topEl == null)
+                {
+                    topEl = new System.Xml.Linq.XElement(ns + "Top");
+                    item.AddFirst(topEl);
+                }
+                topEl.Value = DoubleToInchesString(newTop);
+
+                // Also strip page-number aggregate expressions that only work in page sections,
+                // by replacing them with a human-readable placeholder (Excel has no "pages").
+                foreach (var valEl in item.Descendants(ns + "Value"))
+                {
+                    string v = (string)valEl;
+                    if (!string.IsNullOrWhiteSpace(v))
+                    {
+                        string nv = v
+                            .Replace("Globals!PageNumber", "\"\"")
+                            .Replace("Globals!TotalPages", "\"\"")
+                            .Replace("Globals!PageName", "\"Report Footer\"");
+                        if (nv != v) valEl.Value = nv;
+                    }
+                }
+
+                item.Remove();
+                bodyItems.Add(item);
+
+                double itemBottom = newTop + oldHeight;
+                if (itemBottom > footerBottom) footerBottom = itemBottom;
+                double itemRight = oldLeft + oldWidth;
+                if (itemRight > maxFooterWidth) maxFooterWidth = itemRight;
+            }
+            topOffset = footerBottom;
+
+            // Grow body Height to include the added footer rows
+            var bodyHeightEl = body.Element(ns + "Height");
+            double bodyHeight = InchesStringToDouble((string)bodyHeightEl);
+            if (topOffset > bodyHeight)
+            {
+                if (bodyHeightEl == null)
+                {
+                    bodyHeightEl = new System.Xml.Linq.XElement(ns + "Height");
+                    body.Add(bodyHeightEl);
+                }
+                bodyHeightEl.Value = DoubleToInchesString(topOffset + 0.1);
+            }
+
+            pageFooter.Remove();
+            return xdoc.ToString();
         }
 
 
