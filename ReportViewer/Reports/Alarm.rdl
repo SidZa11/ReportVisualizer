@@ -11,7 +11,7 @@
       <am:Name>MSRB</am:Name>
       <am:Version>15.1.30001.02</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2026-08-01T05:16:55.3123064Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2026-08-02T08:15:07.7681636Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
@@ -20,6 +20,7 @@
       <ConnectionProperties>
         <DataProvider>SQL</DataProvider>
         <ConnectString>Data Source=.\SQLEXPRESS;Initial Catalog=PR_474</ConnectString>
+        <Prompt>Specify a user name and password for data source DataSource1:</Prompt>
       </ConnectionProperties>
       <rd:DataSourceID>cdf8e240-5fbf-4bb6-82bc-4dd7452b00f0</rd:DataSourceID>
     </DataSource>
@@ -91,7 +92,7 @@ ORDER BY EventTime</CommandText>
             </SelectedColumns>
           </QueryDefinition>
         </rd:DesignerState>
-        <CommandText>SELECT top (1)
+        <CommandText>SELECT 
   report_login_status.Id
   ,report_login_status.Username
   ,report_login_status.LoginToken
@@ -99,8 +100,7 @@ ORDER BY EventTime</CommandText>
   ,report_login_status.IpAddress
   ,report_login_status.LoggedInAt
 FROM
-  report_login_status
-order by id desc</CommandText>
+  report_login_status</CommandText>
       </Query>
       <Fields>
         <Field Name="Id">

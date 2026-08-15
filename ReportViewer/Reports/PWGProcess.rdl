@@ -11,13 +11,17 @@
       <am:Name>MSRB</am:Name>
       <am:Version>15.1.30001.02</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2026-08-01T08:26:33.1703295Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2026-08-02T14:28:47.5813574Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <AutoRefresh>0</AutoRefresh>
   <DataSources>
     <DataSource Name="DataSource1">
-      <rd:SecurityType>None</rd:SecurityType>
-      <DataSourceReference>DataSource1</DataSourceReference>
+      <rd:SecurityType>DataBase</rd:SecurityType>
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=.\SQLEXPRESS;Initial Catalog=PR_474</ConnectString>
+        <Prompt>Specify a user name and password for data source DataSource1:</Prompt>
+      </ConnectionProperties>
       <rd:DataSourceID>cdf8e240-5fbf-4bb6-82bc-4dd7452b00f0</rd:DataSourceID>
     </DataSource>
   </DataSources>
@@ -171,6 +175,58 @@ FROM            IntervalDetails</CommandText>
         <Field Name="HPN2_PROCESS_MODE">
           <rd:TypeName>System.Int32</rd:TypeName>
           <DataField>HPN2_PROCESS_MODE</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="DataSet3">
+      <Query>
+        <DataSourceName>DataSource1</DataSourceName>
+        <rd:DesignerState>
+          <QueryDefinition xmlns="http://schemas.microsoft.com/ReportingServices/QueryDefinition/Relational">
+            <SelectedColumns>
+              <ColumnExpression ColumnOwner="report_login_status" ColumnName="Id" />
+              <ColumnExpression ColumnOwner="report_login_status" ColumnName="Username" />
+              <ColumnExpression ColumnOwner="report_login_status" ColumnName="LoginToken" />
+              <ColumnExpression ColumnOwner="report_login_status" ColumnName="MachineName" />
+              <ColumnExpression ColumnOwner="report_login_status" ColumnName="IpAddress" />
+              <ColumnExpression ColumnOwner="report_login_status" ColumnName="LoggedInAt" />
+            </SelectedColumns>
+          </QueryDefinition>
+        </rd:DesignerState>
+        <CommandText>SELECT
+  report_login_status.Id
+  ,report_login_status.Username
+  ,report_login_status.LoginToken
+  ,report_login_status.MachineName
+  ,report_login_status.IpAddress
+  ,report_login_status.LoggedInAt
+FROM
+  report_login_status</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Id">
+          <rd:TypeName>System.Int64</rd:TypeName>
+          <DataField>Id</DataField>
+        </Field>
+        <Field Name="Username">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Username</DataField>
+        </Field>
+        <Field Name="LoginToken">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>LoginToken</DataField>
+        </Field>
+        <Field Name="MachineName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>MachineName</DataField>
+        </Field>
+        <Field Name="IpAddress">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>IpAddress</DataField>
+        </Field>
+        <Field Name="LoggedInAt">
+          <rd:TypeName>System.DateTime</rd:TypeName>
+          <DataField>LoggedInAt</DataField>
         </Field>
       </Fields>
     </DataSet>
@@ -1348,7 +1404,7 @@ PWG PROCESS REPORT - 1.2
                     <Paragraph>
                       <TextRuns>
                         <TextRun>
-                          <Value>="Printed by :" &amp; Parameters!CurrentUser.Value</Value>
+                          <Value>="Printed by :" &amp; First(Fields!Username.Value, "DataSet3")</Value>
                           <Style />
                         </TextRun>
                       </TextRuns>
@@ -1547,11 +1603,6 @@ PWG PROCESS REPORT - 1.2
     </ReportSection>
   </ReportSections>
   <ReportParameters>
-    <ReportParameter Name="CurrentUser">
-      <DataType>String</DataType>
-      <Prompt>CurrentUser</Prompt>
-      <Hidden>true</Hidden>
-    </ReportParameter>
     <ReportParameter Name="StartTime">
       <DataType>String</DataType>
       <Prompt>StartTime</Prompt>
@@ -1590,11 +1641,6 @@ PWG PROCESS REPORT - 1.2
       <NumberOfColumns>5</NumberOfColumns>
       <NumberOfRows>1</NumberOfRows>
       <CellDefinitions>
-        <CellDefinition>
-          <ColumnIndex>0</ColumnIndex>
-          <RowIndex>0</RowIndex>
-          <ParameterName>CurrentUser</ParameterName>
-        </CellDefinition>
         <CellDefinition>
           <ColumnIndex>1</ColumnIndex>
           <RowIndex>0</RowIndex>

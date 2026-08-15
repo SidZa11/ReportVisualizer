@@ -12,15 +12,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.ConfigureKestrel(serverOptions =>
 {
-    serverOptions.ListenAnyIP(5005);
+    serverOptions.ListenAnyIP(builder.Configuration.GetValue<int>("Port"));
 });
 
-builder.Host.UseWindowsService(
-    options =>
-    {
-        options.ServiceName = "ReportVisualizer";
-    }
-);
+// builder.Host.UseWindowsService(
+//     options =>
+//     {
+//         options.ServiceName = "ReportVisualizer";
+//     }
+// );
 // builder.Logging.ClearProviders();
 // builder.Logging.AddEventLog(settings =>
 // {
@@ -192,7 +192,7 @@ app.MapPost("/_app/close", (Microsoft.AspNetCore.Http.HttpContext ctx, Microsoft
 
 try
 {
-    var url = "http://localhost:5005";
+    var url = $"http://localhost:{builder.Configuration.GetValue<int>("Port")}";
 
     if (!LicenseManager.Validate(out string msg))
     {
@@ -200,8 +200,9 @@ try
         Console.WriteLine($"License Error: {msg}");
         return;
     }
-
-    await Task.Run(async () =>
+    if (builder.Configuration.GetValue<bool>("SeparateBrowserMode:enable"))
+    {
+        await Task.Run(async () =>
     {
         await Task.Delay(1500);
         try
@@ -269,6 +270,7 @@ try
         }
         catch { }
     });
+    }
 
     app.Run();
 }

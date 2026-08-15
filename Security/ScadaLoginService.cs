@@ -246,10 +246,13 @@ namespace ReportVisualizer.Security
         public string CreateLoginSession(HttpContext context, string username, string fullName)
         {
             var token = Guid.NewGuid().ToString("N") + "-" + DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString("X");
+
             context.Session.SetString(SessionUserKey, username);
             if (!string.IsNullOrWhiteSpace(fullName))
                 context.Session.SetString(SessionFullNameKey, fullName);
+
             context.Session.SetString(SessionTokenKey, token);
+
             try
             {
                 var connectionString = _configuration.GetConnectionString("DefaultConnection");
@@ -257,22 +260,44 @@ namespace ReportVisualizer.Security
                 {
                     using var conn = new SqlConnection(connectionString);
                     conn.Open();
-                    var cmd = conn.CreateCommand();
-                    cmd.CommandText = @"
-                        INSERT INTO [dbo].[report_login_status] ([Username], [LoginToken], [MachineName], [IpAddress])
-                        VALUES (@username, @token, @machine, @ip);
-                    ";
-                    cmd.Parameters.Add(new SqlParameter("@username", SqlDbType.NVarChar, 255) { Value = username });
-                    cmd.Parameters.Add(new SqlParameter("@token", SqlDbType.NVarChar, 512) { Value = token });
-                    cmd.Parameters.Add(new SqlParameter("@machine", SqlDbType.NVarChar, 255) { Value = (object?)Environment.MachineName ?? DBNull.Value });
-                    cmd.Parameters.Add(new SqlParameter("@ip", SqlDbType.NVarChar, 128) { Value = (object?)context.Connection.RemoteIpAddress?.ToString() ?? DBNull.Value });
-                    cmd.ExecuteNonQuery();
+
+                    // Remove all previous login sessions
+                    using (var deleteCmd = conn.CreateCommand())
+                    {
+                        deleteCmd.CommandText = @"DELETE FROM [dbo].[report_login_status];";
+                        deleteCmd.ExecuteNonQuery();
+                    }
+
+                    // Insert new login session
+                    using (var insertCmd = conn.CreateCommand())
+                    {
+                        insertCmd.CommandText = @"
+                            INSERT INTO [dbo].[report_login_status]
+                            ([Username], [LoginToken], [MachineName], [IpAddress])
+                            VALUES
+                            (@username, @token, @machine, @ip);
+                        ";
+
+                        insertCmd.Parameters.Add(new SqlParameter("@username", SqlDbType.NVarChar, 255) { Value = username });
+                        insertCmd.Parameters.Add(new SqlParameter("@token", SqlDbType.NVarChar, 512) { Value = token });
+                        insertCmd.Parameters.Add(new SqlParameter("@machine", SqlDbType.NVarChar, 255)
+                        {
+                            Value = (object?)Environment.MachineName ?? DBNull.Value
+                        });
+                        insertCmd.Parameters.Add(new SqlParameter("@ip", SqlDbType.NVarChar, 128)
+                        {
+                            Value = (object?)context.Connection.RemoteIpAddress?.ToString() ?? DBNull.Value
+                        });
+
+                        insertCmd.ExecuteNonQuery();
+                    }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error inserting login status: {ex.Message}");
             }
+
             return token;
         }
 
