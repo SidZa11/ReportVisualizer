@@ -4,11 +4,15 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using Microsoft.Extensions.Logging;
 using ReportVisualizer.App_Start;
+using ReportVisualizer.Infrastructure;
 using ReportVisualizer.ReportViewer.ReportDataExtraction; // Added for RdlDataExtractor
 using ReportVisualizer.ReportViewer.ReportDataExecution; // Added for SqlDatasetExecutor
 using ReportVisualizer.ReportViewer; // Added for ReportRenderer
 
 var builder = WebApplication.CreateBuilder(args);
+
+// version
+var version = builder.Configuration.GetValue<string>("version");
 
 builder.WebHost.ConfigureKestrel(serverOptions =>
 {
@@ -49,6 +53,7 @@ builder.Services.AddScoped<RdlDataExtractor>();
 builder.Services.AddScoped<SqlDatasetExecutor>();
 builder.Services.AddScoped<ReportRenderer>();
 builder.Services.AddScoped<ReportVisualizer.Security.ScadaLoginService>();
+builder.Services.AddLogoService();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHostedService<LicenseWatchdogService>();
 
@@ -58,6 +63,12 @@ builder.Services.AddHostedService<LicenseWatchdogService>();
 
 var app = builder.Build();
 
+app.Use(async (context, next) =>
+{
+    context.Items["AppVersion"] = version;
+    await next();
+});
+
 // Ensure the login status table exists when ScadaLogin is enabled
 try
 {
@@ -65,11 +76,12 @@ try
     {
         var loginSvc = scope.ServiceProvider.GetService<ReportVisualizer.Security.ScadaLoginService>();
         loginSvc?.EnsureLoginStatusTable();
+        loginSvc?.EnsureDefaultUser();
     }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Startup error ensuring report_login_status table: {ex.Message}");
+    Console.WriteLine($"Startup error ensuring login tables and default user: {ex.Message}");
 }
 
 // Configure the HTTP request pipeline
@@ -81,6 +93,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseLogoStaticFiles();
 
 app.UseRouting();
 

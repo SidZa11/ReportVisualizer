@@ -4,6 +4,8 @@
     ViewData["Title"] = "Login";
     Layout = null;
     var returnUrl = ViewData["ReturnUrl"]?.ToString();
+    bool showClientLogo = Model?.ClientLogo?.HasLogo == true;
+    string clientLogoUrl = showClientLogo ? Model.ClientLogo.RelativeUrl : null;
 }
 
 <!DOCTYPE html>
@@ -34,6 +36,8 @@
             width: 100%;
             max-width: 440px;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         .login-header {
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
@@ -53,6 +57,7 @@
         }
         .login-body {
             padding: 1.75rem 1.5rem 1.5rem;
+            flex: 1;
         }
         .login-brand {
             display: inline-flex;
@@ -78,6 +83,37 @@
         .form-control:focus {
             box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.2);
             border-color: #2a5298;
+        }
+        .login-footer {
+            padding: 0.75rem 1.5rem 1.1rem;
+            text-align: center;
+            background: rgba(255,255,255,0.55);
+            border-top: 1px solid rgba(30, 60, 114, 0.08);
+        }
+        .client-logo-wrap {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            opacity: 0.55;
+            filter: grayscale(45%);
+            transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+        }
+        .client-logo-wrap:hover {
+            opacity: 0.9;
+            filter: grayscale(0%);
+            transform: translateY(-1px);
+        }
+        .client-logo-wrap img {
+            max-height: 32px;
+            max-width: 160px;
+            object-fit: contain;
+        }
+        .client-logo-caption {
+            font-size: 0.72rem;
+            letter-spacing: 0.3px;
+            color: #5c6b83;
+            font-weight: 500;
         }
     </style>
 </head>
@@ -109,6 +145,15 @@
                 <button type="submit" class="btn btn-primary btn-block py-2 font-weight-semibold">Sign in</button>
             </form>
         </div>
+        @if (showClientLogo)
+        {
+            <div class="login-footer">
+                <div class="client-logo-wrap">
+                    <img src="@clientLogoUrl" alt="logo" />
+                    <span class="client-logo-caption">Powered By</span>
+                </div>
+            </div>
+        }
     </div>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>

@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <NoWarn>NU1701</NoWarn>
     <OutputType>WinExe</OutputType>
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +29,33 @@
     <Folder Include="Utilities\" />
     <Folder Include="App_Start\" />
     <Folder Include="Security\" />
+    <Folder Include="logo\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="logo\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <Target Name="PrepareAppIcon" BeforeTargets="BeforeBuild;CoreCompile">
+    <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
+    <PropertyGroup>
+      <_TargetIco>$(IntermediateOutputPath)app.ico</_TargetIco>
+      <_CfgPath>$(MSBuildProjectDirectory)\appsettings.json</_CfgPath>
+      <_LogoDir>$(MSBuildProjectDirectory)\logo</_LogoDir>
+      <_ScriptPath>$(MSBuildProjectDirectory)\build\generate-app-icon.ps1</_ScriptPath>
+    </PropertyGroup>
+
+    <Exec Command="powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;$(_ScriptPath)&quot; -CfgPath &quot;$(_CfgPath)&quot; -LogoDir &quot;$(_LogoDir)&quot; -DstIcoPath &quot;$(_TargetIco)&quot;"
+          Condition="Exists('$(_ScriptPath)')"
+          ConsoleToMsBuild="true" ContinueOnError="true" />
+
+    <PropertyGroup Condition="Exists('$(_TargetIco)')">
+      <ApplicationIcon>$(_TargetIco)</ApplicationIcon>
+    </PropertyGroup>
+
+    <Message Importance="high" Text="Logo application icon: $(ApplicationIcon)" />
+  </Target>
 
 </Project>

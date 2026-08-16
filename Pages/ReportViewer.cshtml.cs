@@ -325,6 +325,105 @@ namespace ReportVisualizer.Pages
             return File(bytes, mimeType, $"{reportName}.{extension}");
         }
 
+        public async Task<IActionResult> OnGetPrintPdf(string reportName)
+        {
+            bool allowPrint = string.Equals(_configuration["ReportDownload:print:enable"], "true", StringComparison.OrdinalIgnoreCase);
+            if (!allowPrint)
+            {
+                return Forbid();
+            }
+
+            if (string.IsNullOrEmpty(reportName))
+                return BadRequest("Report not selected");
+
+            var reportPath = Path.Combine(_reportsPath, reportName + ".rdl");
+
+            if (!System.IO.File.Exists(reportPath))
+                return BadRequest("Report not found");
+
+            LocalReport report = new();
+            report.ReportPath = reportPath;
+
+            Console.WriteLine($"OnGetPrintPdf called for report: {reportName}");
+
+            var snapshot = ReportSnapshotSessionStore.Get(HttpContext.Session);
+            bool usedCachedSnapshot = snapshot != null &&
+                                      string.Equals(snapshot.ReportName, reportName, StringComparison.OrdinalIgnoreCase) &&
+                                      snapshot.DataSources != null &&
+                                      snapshot.DataSources.Count > 0;
+
+            Dictionary<string, object> reportParameters;
+            if (usedCachedSnapshot)
+            {
+                reportParameters = DataTableDtoMapper.NormalizeParameterDictionary(snapshot.Parameters ?? new Dictionary<string, object>());
+                foreach (var ds in snapshot.DataSources)
+                {
+                    var dt = DataTableDtoMapper.ToDataTable(ds.Table);
+                    if (string.IsNullOrWhiteSpace(dt.TableName)) dt.TableName = ds.Name;
+                    report.DataSources.Add(new ReportDataSource(ds.Name, dt));
+                }
+
+                if (reportParameters.Count > 0)
+                {
+                    var rdlParams = reportParameters.Select(p =>
+                    {
+                        if (p.Value is Microsoft.Extensions.Primitives.StringValues sv)
+                            return new ReportParameter(p.Key, sv.ToArray());
+                        if (p.Value == null)
+                            return new ReportParameter(p.Key, new[] { (string)null });
+                        if (p.Value is IEnumerable<string> en)
+                            return new ReportParameter(p.Key, new List<string>(en).ToArray());
+                        return new ReportParameter(p.Key, Convert.ToString(p.Value));
+                    }).ToList();
+                    try { report.SetParameters(rdlParams); } catch { }
+                }
+            }
+            else
+            {
+                var json = HttpContext.Session.GetString("LastReportParameters");
+
+                if (string.IsNullOrEmpty(json))
+                {
+                    var rdlDefinedParameters = _rdlDataExtractor.ExtractQueryParameters(reportPath);
+                    if (rdlDefinedParameters == null || rdlDefinedParameters.Count == 0)
+                    {
+                        reportParameters = new Dictionary<string, object>();
+                    }
+                    else
+                    {
+                        return BadRequest("No report parameters found. Preview report first.");
+                    }
+                }
+                else
+                {
+                    reportParameters = System.Text.Json.JsonSerializer
+                        .Deserialize<Dictionary<string, object>>(json);
+                }
+
+                Console.WriteLine("Print - Report Parameters being passed to LoadReportDataAsync:");
+                foreach (var param in reportParameters)
+                {
+                    Console.WriteLine($"- {param.Key}: {param.Value}");
+                }
+
+                await LoadReportDataAsync(report, reportPath, reportParameters);
+            }
+
+            string deviceInfo = BuildDeviceInfo("PDF");
+
+            string mimeType, encoding, extension;
+            Warning[] warnings;
+            string[] streamids;
+
+            var bytes = report.Render(
+                "PDF", deviceInfo,
+                out mimeType, out encoding,
+                out extension, out streamids, out warnings);
+
+            Response.Headers["Content-Disposition"] = "inline; filename=\"" + reportName + ".pdf\"";
+            return File(bytes, mimeType);
+        }
+
 
         private async Task LoadReportDataAsync(LocalReport report, string reportPath, Dictionary<string, object> parameters)
         {

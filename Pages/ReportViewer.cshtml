@@ -129,25 +129,41 @@
         }
 
         function printReport() {
-            var content = document.getElementById("reportContainer").innerHTML;
+            var report = document.getElementById("reportSelect").value;
 
-            var w = window.open('', '', 'height=800,width=1200');
-            w.document.write('<html><head><title>Print Report</title>');
-            w.document.write('<style>');
-            w.document.write('@@page { size: A4; margin: 10mm; }');
-            w.document.write('html, body { margin: 0; padding: 0; background: #fff; }');
-            w.document.write('body { width: 210mm; min-height: 297mm; padding: 0; font-family: Segoe UI, Tahoma, sans-serif; }');
-            w.document.write('* { box-sizing: border-box; }');
-            w.document.write('table { border-collapse: collapse; page-break-inside: auto; }');
-            w.document.write('tr { page-break-inside: avoid; page-break-after: auto; }');
-            w.document.write('thead { display: table-header-group; }');
-            w.document.write('tfoot { display: table-footer-group; }');
-            w.document.write('</style>');
-            w.document.write('</head><body>');
-            w.document.write(content);
-            w.document.write('</body></html>');
-            w.document.close();
-            setTimeout(function(){ w.print(); }, 250);
+            if (!report) {
+                alert("Select report first");
+                return;
+            }
+
+            var printUrl = `/ReportViewer?handler=PrintPdf&reportName=${encodeURIComponent(report)}`;
+
+            fetch(printUrl)
+                .then(function (response) {
+                    if (!response.ok) throw new Error("Server returned " + response.status);
+                    return response.blob();
+                })
+                .then(function (blob) {
+                    var blobUrl = URL.createObjectURL(blob);
+                    var w = window.open('', '_blank', 'height=900,width=1200');
+                    if (!w) {
+                        window.open(printUrl, '_blank');
+                        return;
+                    }
+                    w.document.write('<html><head><title>Print Report</title>');
+                    w.document.write('<style>html,body{margin:0;padding:0;height:100%;width:100%;overflow:hidden;}</style>');
+                    w.document.write('</head><body>');
+                    w.document.write('<iframe id="pdfFrame" src="' + blobUrl + '" style="width:100vw;height:100vh;border:none;display:block;"></iframe>');
+                    w.document.write('<scr' + 'ipt>');
+                    w.document.write('(function(){var frame=document.getElementById("pdfFrame");function tryPrint(){try{frame.contentWindow.focus();frame.contentWindow.print();}catch(e){console.log("Auto-print not available. Please press Ctrl+P or use the PDF viewer print button.");}};if(frame.contentDocument && frame.contentDocument.readyState==="complete"){setTimeout(tryPrint,500);}else{frame.onload=function(){setTimeout(tryPrint,500);};}})();');
+                    w.document.write('</scr' + 'ipt>');
+                    w.document.write('</body></html>');
+                    w.document.close();
+                })
+                .catch(function (err) {
+                    console.error("Print via PDF failed:", err);
+                    window.open(printUrl, '_blank');
+                });
         }
 
         $(document).ready(function () {

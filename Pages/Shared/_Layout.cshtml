@@ -6,6 +6,7 @@
     var ctx = HttpContextAccessor.HttpContext;
     var mode = ctx?.Session.GetString("AppMode");
     bool isDev = mode == "DEV";
+    var version = Context.Items["AppVersion"]?.ToString();
     bool showScadaLogin = ScadaLoginSvc.Options.Enable;
     bool scadaLoggedIn = showScadaLogin && ScadaLoginSvc.IsLoggedIn(ctx);
     string scadaDisplayName = scadaLoggedIn ? (ScadaLoginSvc.GetCurrentFullName(ctx) ?? ScadaLoginSvc.GetCurrentUser(ctx) ?? "User") : "";
@@ -210,7 +211,7 @@
 
     <footer class="footer">
         <div class="container">
-            <p>&copy; @DateTime.Now.Year - Report Visualizer. All rights reserved.</p>
+            <p>&copy; @DateTime.Now.Year - Report Visualizer (V-@version). All rights reserved.</p>
             @* <p>Contact: <a href="mailto:siddiquizakir11@gmail.com">siddiquizakir11@gmail.com</a></p> *@
         </div>
     </footer>

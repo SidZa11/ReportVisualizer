@@ -1,19 +1,24 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ReportVisualizer.Security;
+using ReportVisualizer.Infrastructure;
 
 namespace ReportVisualizer.Pages
 {
     public class LoginModel : PageModel
     {
         private readonly ScadaLoginService _scadaLogin;
+        private readonly LogoService _logoService;
 
-        public LoginModel(ScadaLoginService scadaLogin)
+        public LoginModel(ScadaLoginService scadaLogin, LogoService logoService)
         {
             _scadaLogin = scadaLogin;
+            _logoService = logoService;
         }
 
         public bool LoginEnabled => _scadaLogin.Options.Enable;
+
+        public LogoResolutionResult ClientLogo { get; set; }
 
         [BindProperty]
         public string Username { get; set; }
@@ -25,6 +30,8 @@ namespace ReportVisualizer.Pages
 
         public IActionResult OnGet(string returnUrl = null)
         {
+            ClientLogo = _logoService.ResolveClientLogo();
+
             if (!_scadaLogin.Options.Enable)
             {
                 return Redirect(returnUrl ?? "/ReportViewer");
@@ -39,6 +46,8 @@ namespace ReportVisualizer.Pages
 
         public IActionResult OnPost(string returnUrl = null)
         {
+            ClientLogo = _logoService.ResolveClientLogo();
+
             if (!_scadaLogin.Options.Enable)
             {
                 return Redirect(returnUrl ?? "/ReportViewer");

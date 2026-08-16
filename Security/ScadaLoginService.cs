@@ -11,12 +11,20 @@ namespace ReportVisualizer.Security
         public bool Enable { get; set; }
         public string DataTableName { get; set; } = "User_list";
         public ScadaLoginEncryptionOptions Encryption { get; set; } = new ScadaLoginEncryptionOptions();
+        public ScadaLoginDefaultUserOptions DefaultUser { get; set; } = new ScadaLoginDefaultUserOptions();
     }
 
     public class ScadaLoginEncryptionOptions
     {
         public bool Enable { get; set; }
         public int Key { get; set; } = 3;
+    }
+
+    public class ScadaLoginDefaultUserOptions
+    {
+        public bool Enable { get; set; }
+        public string Username { get; set; } = "viewer";
+        public string Password { get; set; } = "123456";
     }
 
     public class ScadaLoginResult
@@ -38,6 +46,7 @@ namespace ReportVisualizer.Security
             _options = new ScadaLoginOptions();
             configuration.GetSection("ScadaLogin").Bind(_options);
             if (_options.Encryption == null) _options.Encryption = new ScadaLoginEncryptionOptions();
+            if (_options.DefaultUser == null) _options.DefaultUser = new ScadaLoginDefaultUserOptions();
             if (string.IsNullOrWhiteSpace(_options.DataTableName)) _options.DataTableName = "User_list";
         }
 
@@ -112,6 +121,102 @@ namespace ReportVisualizer.Security
             catch (Exception ex)
             {
                 Console.WriteLine($"Error ensuring report_login_status table exists: {ex.Message}");
+            }
+        }
+
+        public void EnsureDefaultUser()
+        {
+            if (!_options.Enable) return;
+            if (_options.DefaultUser == null || !_options.DefaultUser.Enable) return;
+            if (string.IsNullOrWhiteSpace(_options.DefaultUser.Username) || string.IsNullOrWhiteSpace(_options.DefaultUser.Password)) return;
+            try
+            {
+                var connectionString = _configuration.GetConnectionString("DefaultConnection");
+                if (string.IsNullOrWhiteSpace(connectionString)) return;
+
+                using var conn = new SqlConnection(connectionString);
+                conn.Open();
+
+                string tableName = _options.DataTableName ?? "User_list";
+                var tableCheckCmd = conn.CreateCommand();
+                tableCheckCmd.CommandText = @"
+                    SELECT 1 FROM INFORMATION_SCHEMA.TABLES
+                    WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = @tableName;
+                ";
+                tableCheckCmd.Parameters.Add(new SqlParameter("@tableName", SqlDbType.NVarChar, 128) { Value = tableName });
+                var tableExists = tableCheckCmd.ExecuteScalar() != null;
+                if (!tableExists)
+                {
+                    var createTableCmd = conn.CreateCommand();
+                    createTableCmd.CommandText = $@"
+                        CREATE TABLE [dbo].[{SqlEscapeIdentifier(tableName)}] (
+                            [Id] BIGINT IDENTITY(1,1) PRIMARY KEY NOT NULL,
+                            [Username] NVARCHAR(255) NOT NULL,
+                            [Password] NVARCHAR(512) NOT NULL,
+                            [Userfullname] NVARCHAR(512) NULL
+                        );
+                        CREATE UNIQUE INDEX [UX_{SqlEscapeIdentifier(tableName)}_Username] ON [dbo].[{SqlEscapeIdentifier(tableName)}]([Username]);
+                    ";
+                    createTableCmd.ExecuteNonQuery();
+                }
+
+                var schemaCmd = conn.CreateCommand();
+                schemaCmd.CommandText = @"
+                    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = @tableName;
+                ";
+                schemaCmd.Parameters.Add(new SqlParameter("@tableName", SqlDbType.NVarChar, 128) { Value = tableName });
+                var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                using (var rdr = schemaCmd.ExecuteReader())
+                {
+                    while (rdr.Read())
+                    {
+                        columns.Add(Convert.ToString(rdr["COLUMN_NAME"]));
+                    }
+                }
+
+                if (!columns.Contains("Username") || !columns.Contains("Password")) return;
+
+                var userCheckCmd = conn.CreateCommand();
+                userCheckCmd.CommandText = $@"
+                    SELECT 1 FROM [dbo].[{SqlEscapeIdentifier(tableName)}]
+                    WHERE LOWER([Username]) = LOWER(@username);
+                ";
+                userCheckCmd.Parameters.Add(new SqlParameter("@username", SqlDbType.NVarChar, 255) { Value = _options.DefaultUser.Username });
+                var userExists = userCheckCmd.ExecuteScalar() != null;
+                if (userExists) return;
+
+                string encryptedPassword = _options.Encryption.Enable
+                    ? EncryptPassword(_options.DefaultUser.Password)
+                    : _options.DefaultUser.Password;
+
+                var insertCmd = conn.CreateCommand();
+                if (columns.Contains("Userfullname"))
+                {
+                    insertCmd.CommandText = $@"
+                        INSERT INTO [dbo].[{SqlEscapeIdentifier(tableName)}]
+                        ([Username], [Password], [Userfullname])
+                        VALUES
+                        (@username, @password, @fullname);
+                    ";
+                    insertCmd.Parameters.Add(new SqlParameter("@fullname", SqlDbType.NVarChar, 512) { Value = "Default Viewer User" });
+                }
+                else
+                {
+                    insertCmd.CommandText = $@"
+                        INSERT INTO [dbo].[{SqlEscapeIdentifier(tableName)}]
+                        ([Username], [Password])
+                        VALUES
+                        (@username, @password);
+                    ";
+                }
+                insertCmd.Parameters.Add(new SqlParameter("@username", SqlDbType.NVarChar, 255) { Value = _options.DefaultUser.Username });
+                insertCmd.Parameters.Add(new SqlParameter("@password", SqlDbType.NVarChar, 512) { Value = encryptedPassword });
+                insertCmd.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error ensuring default user exists: {ex.Message}");
             }
         }
 
